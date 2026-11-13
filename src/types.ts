@@ -197,4 +197,17 @@ export interface UserAppState {
   customQuestions: ExamQuestion[];
   dailyLogs: Record<string, DailyStudyLog>;
   rebalancedDaysCount: number;
+  storyMode: boolean;
+  companionLog: Record<string, CompanionLogEntry>;
+  seenStoryBeats: string[];
+  lastCheckInDate: string | null;
+  reflections: Record<string, string>;
+}
+
+export type Mood = 'tired' | 'calm' | 'energized' | 'drift';
+
+export interface CompanionLogEntry {
+  minutes: number;
+  mood?: Mood;
+  completedLessonIds: string[];
 }

@@ -1002,3 +1002,360 @@ details.linear-disclosure[open] summary {
     flex-wrap: wrap;
   }
 }
+
+/* ===== Wowo Shelter Story Layer ===== */
+:root {
+  --color-warm: #e8b77a;
+  --color-warm-subtle: rgba(232, 183, 122, 0.08);
+  --color-warm-border: rgba(232, 183, 122, 0.32);
+  --paper: #f4ecdf;
+  --paper-ink: #2f2a24;
+  --paper-ink-muted: #6f6559;
+}
+
+.avatar-initial {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.ticket-card {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  background-color: var(--bg-sidebar);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  transition: border-color 150ms var(--ease-out);
+}
+
+.ticket-card.next {
+  border-color: var(--border-strong);
+}
+
+.ticket-card.done {
+  opacity: 0.64;
+}
+
+.ticket-card.compact {
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.ticket-card.compact .ticket-action {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.ticket-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+.ticket-from {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ticket-title {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ticket-title-en {
+  font-size: 12px;
+  line-height: 16px;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.ticket-text {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.ticket-card.compact .ticket-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.ticket-footer {
+  display: block;
+  margin-top: 8px;
+}
+
+.shelter-map {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 104px;
+  grid-template-areas:
+    'lobby lobby kennels cattery'
+    'adoption yard yard storage'
+    'donation clinic garden garden';
+  gap: 1px;
+  background-color: var(--border-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.shelter-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: var(--bg-sidebar);
+  transition: background-color 220ms var(--ease-out);
+}
+
+.shelter-area-label {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.shelter-area-chapter {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+.shelter-area-lamp {
+  position: absolute;
+  top: 18px;
+  right: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--border-strong);
+}
+
+.shelter-area.lit {
+  background-color: var(--color-warm-subtle);
+}
+
+.shelter-area.lit .shelter-area-label {
+  color: var(--color-warm);
+}
+
+.shelter-area.lit .shelter-area-chapter {
+  color: var(--text-secondary);
+}
+
+.shelter-area.lit .shelter-area-lamp {
+  background-color: var(--color-warm);
+  box-shadow: 0 0 0 3px rgba(232, 183, 122, 0.16);
+}
+
+.shelter-area.current {
+  box-shadow: inset 0 0 0 1px var(--color-warm-border);
+}
+
+.shelter-area.current .shelter-area-label {
+  color: var(--text-primary);
+}
+
+.adoption-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 16px;
+}
+
+.polaroid {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 8px 12px;
+  background-color: var(--paper);
+  border: 1px solid var(--color-warm-border);
+  border-radius: var(--radius-sm);
+}
+
+.polaroid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 2px;
+}
+
+.polaroid figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px;
+}
+
+.polaroid-name {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--paper-ink);
+}
+
+.polaroid-note {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--paper-ink-muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.polaroid.waiting {
+  background-color: var(--bg-sidebar);
+  border-color: var(--border-hairline);
+}
+
+.polaroid.waiting img {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+.polaroid.waiting .polaroid-name {
+  color: var(--text-secondary);
+}
+
+.polaroid.waiting .polaroid-note {
+  color: var(--text-muted);
+}
+
+.companion-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 10px);
+  grid-auto-columns: 10px;
+  gap: 4px;
+}
+
+.companion-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background-color: var(--bg-raised);
+}
+
+.companion-dot.visited {
+  background-color: var(--color-warm);
+}
+
+.companion-dot.visited.light {
+  background-color: rgba(232, 183, 122, 0.5);
+}
+
+.companion-dot.today {
+  outline: 1px solid var(--text-secondary);
+  outline-offset: 1px;
+}
+
+.companion-dot.pad {
+  visibility: hidden;
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mood-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px;
+  text-align: left;
+  background-color: var(--bg-sidebar);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-text);
+  cursor: pointer;
+  transition:
+    border-color 150ms var(--ease-out),
+    background-color 150ms var(--ease-out);
+}
+
+.mood-option:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-raised);
+}
+
+.mood-option:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.mood-option-label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.mood-option-hint {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+.story-unlock {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.story-quote {
+  padding: 12px 16px;
+  border-left: 2px solid var(--color-warm);
+  background-color: var(--color-warm-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .shelter-map {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'lobby lobby'
+      'kennels cattery'
+      'adoption storage'
+      'yard yard'
+      'donation clinic'
+      'garden garden';
+  }
+  .story-unlock,
+  .mood-grid {
+    grid-template-columns: 1fr;
+  }
+}

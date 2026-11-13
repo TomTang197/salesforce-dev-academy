@@ -50,6 +50,11 @@ export const INITIAL_APP_STATE: UserAppState = {
   customQuestions: [],
   dailyLogs: {},
   rebalancedDaysCount: 0,
+  storyMode: true,
+  companionLog: {},
+  seenStoryBeats: ['L01'],
+  lastCheckInDate: null,
+  reflections: {},
 };
 
 export function loadAppState(): UserAppState {

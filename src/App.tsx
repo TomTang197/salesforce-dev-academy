@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Calendar,
   BookOpen,
@@ -11,31 +11,45 @@ import {
   Upload,
   RotateCcw,
   Compass,
+  Home,
 } from 'lucide-react';
-import { UserAppState, ExamQuestion, LanguageMode } from './types';
+import { UserAppState, ExamQuestion, LanguageMode, Mood } from './types';
 import { CURRICULUM_LESSONS } from './data/curriculum';
 import { BRIDGE_LESSONS } from './data/bridgeOnboarding';
 import { CODING_CHALLENGES } from './data/challenges';
 import { EXAM_QUESTIONS } from './data/questions';
 import { FLASHCARDS_DATA } from './data/flashcards';
+import { MOOD_OPTIONS } from './data/story/moods';
 import {
   loadAppState,
   saveAppState,
   INITIAL_APP_STATE,
   getPacingConfig,
+  getTodayDateStr,
 } from './utils/storageAndPlanner';
+import {
+  addCompanionMinutes,
+  recordCompanionLesson,
+  setCompanionMood,
+  getAdoptedAnimals,
+  getLessonStory,
+  StoryTicket,
+} from './utils/story';
 import { ElasticPlannerView } from './components/ElasticPlannerView';
 import { BridgeOnboardingView } from './components/BridgeOnboardingView';
 import { CurriculumView } from './components/CurriculumView';
 import { CodingLabView } from './components/CodingLabView';
 import { ExamSimulatorView } from './components/ExamSimulatorView';
 import { FlashcardsAndCheatSheetView } from './components/FlashcardsAndCheatSheetView';
+import { ShelterHomeView } from './components/story/ShelterHomeView';
+import { MoodCheckInDialog } from './components/story/MoodCheckInDialog';
+import { StoryUnlockDialog } from './components/story/StoryUnlockDialog';
 
-type ActiveTab = 'planner' | 'bridge' | 'curriculum' | 'coding-lab' | 'exam-prep' | 'flashcards';
+type ActiveTab = 'shelter' | 'planner' | 'bridge' | 'curriculum' | 'coding-lab' | 'exam-prep' | 'flashcards';
 
 export function App() {
   const [state, setState] = useState<UserAppState>(() => loadAppState());
-  const [activeTab, setActiveTab] = useState<ActiveTab>('planner');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => (state.storyMode ? 'shelter' : 'planner'));
   const [activeLessonId, setActiveLessonId] = useState<string>('L01');
   const [activeChallengeId, setActiveChallengeId] = useState<string>('C01');
   const [activeQuestionId, setActiveQuestionId] = useState<string>('Q01');
@@ -44,6 +58,12 @@ export function App() {
   // Built-in Focus Study Timer
   const [timerRunning, setTimerRunning] = useState<boolean>(false);
   const [sessionSeconds, setSessionSeconds] = useState<number>(0);
+
+  // Story layer dialogs
+  const [checkInOpen, setCheckInOpen] = useState<boolean>(
+    () => state.storyMode && state.lastCheckInDate !== getTodayDateStr()
+  );
+  const [unlockLessonId, setUnlockLessonId] = useState<string | null>(null);
 
   // Backup / Restore Dialog Ref
   const backupDialogRef = useRef<HTMLDialogElement | null>(null);
@@ -76,17 +96,16 @@ export function App() {
     }
   }, []);
 
-  // Study timer effect
+  // Study timer effect (also feeds the companion log)
   useEffect(() => {
     if (!timerRunning) return;
     const interval = window.setInterval(() => {
       setSessionSeconds((prev) => {
         const next = prev + 1;
         if (next % 60 === 0) {
-          setState((s) => ({
-            ...s,
-            totalMinutesStudied: s.totalMinutesStudied + 1,
-          }));
+          setState((s) =>
+            addCompanionMinutes({ ...s, totalMinutesStudied: s.totalMinutesStudied + 1 }, getTodayDateStr(), 1)
+          );
         }
         return next;
       });
@@ -95,18 +114,23 @@ export function App() {
   }, [timerRunning]);
 
   const handleToggleLessonComplete = (lessonId: string) => {
+    const willComplete = !state.completedLessonIds.includes(lessonId);
+    if (willComplete && state.storyMode && !state.seenStoryBeats.includes(lessonId) && getLessonStory(lessonId)) {
+      setUnlockLessonId(lessonId);
+    }
     setState((prev) => {
-      const exists = prev.completedLessonIds.includes(lessonId);
-      const nextCompleted = exists
-        ? prev.completedLessonIds.filter((id) => id !== lessonId)
-        : [...prev.completedLessonIds, lessonId];
-      return {
+      if (prev.completedLessonIds.includes(lessonId)) {
+        return { ...prev, completedLessonIds: prev.completedLessonIds.filter((id) => id !== lessonId) };
+      }
+      const today = getTodayDateStr();
+      let next: UserAppState = {
         ...prev,
-        completedLessonIds: nextCompleted,
-        totalMinutesStudied: exists
-          ? prev.totalMinutesStudied
-          : prev.totalMinutesStudied + 15,
+        completedLessonIds: [...prev.completedLessonIds, lessonId],
+        totalMinutesStudied: prev.totalMinutesStudied + 15,
+        seenStoryBeats: prev.seenStoryBeats.includes(lessonId) ? prev.seenStoryBeats : [...prev.seenStoryBeats, lessonId],
       };
+      next = addCompanionMinutes(next, today, 15);
+      return recordCompanionLesson(next, today, lessonId);
     });
   };
 
@@ -161,9 +185,7 @@ export function App() {
             timestamp: Date.now(),
             attemptsCount: (prevAttempt?.attemptsCount || 0) + 1,
             wrongStreak: isCorrect ? 0 : (prevAttempt?.wrongStreak || 0) + 1,
-            masteredFromWrongBook: isCorrect
-              ? true
-              : prevAttempt?.masteredFromWrongBook || false,
+            masteredFromWrongBook: isCorrect ? true : prevAttempt?.masteredFromWrongBook || false,
           },
         },
       };
@@ -206,10 +228,7 @@ export function App() {
     }));
   };
 
-  const handleRateFlashcard = (
-    cardId: string,
-    confidence: 'again' | 'hard' | 'good' | 'easy'
-  ) => {
+  const handleRateFlashcard = (cardId: string, confidence: 'again' | 'hard' | 'good' | 'easy') => {
     setState((prev) => {
       const existing = prev.flashcardStates[cardId];
       return {
@@ -253,23 +272,83 @@ export function App() {
   };
 
   const allQuestionsCount = EXAM_QUESTIONS.length + state.customQuestions.length;
-  const completedChallengesCount = Object.values(
-    state.challengeSubmissions
-  ).filter((s) => s.passedAllRules).length;
-  const completedBridgeCount = BRIDGE_LESSONS.filter((l) =>
-    state.completedLessonIds.includes(l.id)
+  const completedChallengesCount = Object.values(state.challengeSubmissions).filter((s) => s.passedAllRules).length;
+  const completedBridgeCount = BRIDGE_LESSONS.filter((l) => state.completedLessonIds.includes(l.id)).length;
+  const wrongBookCount = Object.values(state.questionAttempts).filter(
+    (a) => !a.isCorrect && !a.masteredFromWrongBook
   ).length;
-  const pacingMinutes =
-    state.todayAvailableMinutesOverride ??
-    getPacingConfig(state.pacingMode).defaultMinutes;
+  const adoptedCount = getAdoptedAnimals(state.completedLessonIds).length;
+  const pacingMinutes = state.todayAvailableMinutesOverride ?? getPacingConfig(state.pacingMode).defaultMinutes;
 
   const readinessScore = Math.round(
     ((state.completedLessonIds.length / CURRICULUM_LESSONS.length) * 0.4 +
       (completedChallengesCount / CODING_CHALLENGES.length) * 0.3 +
-      (Object.values(state.questionAttempts).filter((a) => a.isCorrect).length /
-        allQuestionsCount) *
-        0.3) *
+      (Object.values(state.questionAttempts).filter((a) => a.isCorrect).length / allQuestionsCount) * 0.3) *
       100
+  );
+
+  const handleOpenTicket = (ticket: StoryTicket) => {
+    if (ticket.type === 'lesson') {
+      setActiveLessonId(ticket.targetId);
+      setActiveTab('curriculum');
+    } else if (ticket.type === 'challenge') {
+      setActiveChallengeId(ticket.targetId);
+      setActiveTab('coding-lab');
+    } else if (ticket.type === 'questions') {
+      setActiveQuestionId(ticket.targetId);
+      setFilterWrongOnly(wrongBookCount > 0);
+      setActiveTab('exam-prep');
+    } else {
+      setActiveTab('flashcards');
+    }
+  };
+
+  const handleSetStoryMode = (on: boolean) => {
+    setState((prev) => ({ ...prev, storyMode: on }));
+    setActiveTab(on ? 'shelter' : 'planner');
+  };
+
+  const handleChooseMood = (mood: Mood) => {
+    const option = MOOD_OPTIONS.find((o) => o.mood === mood);
+    const today = getTodayDateStr();
+    setState((prev) => {
+      let next = setCompanionMood({ ...prev, lastCheckInDate: today }, today, mood);
+      if (option && option.minutes !== null) {
+        next = { ...next, todayAvailableMinutesOverride: option.minutes };
+      }
+      return next;
+    });
+  };
+
+  const handleCloseCheckIn = useCallback((mood: Mood | null) => {
+    setCheckInOpen(false);
+    setState((prev) => ({ ...prev, lastCheckInDate: getTodayDateStr() }));
+    if (mood === 'drift') {
+      setActiveTab('shelter');
+      window.setTimeout(() => {
+        document.getElementById('adoption-wall')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }
+  }, []);
+
+  const handleCloseUnlock = useCallback(() => setUnlockLessonId(null), []);
+
+  const unlockStory = unlockLessonId ? getLessonStory(unlockLessonId) ?? null : null;
+
+  const navItem = (tab: ActiveTab, icon: React.ReactNode, label: string, badge: React.ReactNode, onClick?: () => void) => (
+    <li>
+      <button
+        type="button"
+        className={`nav-item-btn ${activeTab === tab ? 'active' : ''}`}
+        onClick={onClick ?? (() => setActiveTab(tab))}
+      >
+        <span className="nav-item-left">
+          <span className="nav-icon-slot">{icon}</span>
+          <span>{label}</span>
+        </span>
+        <span className="nav-badge">{badge}</span>
+      </button>
+    </li>
   );
 
   return (
@@ -279,152 +358,59 @@ export function App() {
         <div className="brand-header">
           <div className="brand-glyph" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M3 3.5H13M3 8H10.5M3 12.5H7.5"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
+              <path d="M3 3.5H13M3 8H10.5M3 12.5H7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </div>
           <div>
             <div className="brand-title">ForceCraft</div>
-            <div className="brand-subtitle">PD1 · PD2 本地备考工作台</div>
+            <div className="brand-subtitle">
+              {state.storyMode ? '窝窝救助站 · 技术志愿者' : 'PD1 · PD2 本地备考工作台'}
+            </div>
           </div>
         </div>
 
         <div className="nav-section-title">学习工作台</div>
         <ul className="nav-list">
-          <li>
-            <button
-              type="button"
-              className={`nav-item-btn ${activeTab === 'planner' ? 'active' : ''}`}
-              onClick={() => setActiveTab('planner')}
-            >
-              <span className="nav-item-left">
-                <span className="nav-icon-slot">
-                  <Calendar size={16} strokeWidth={1.5} />
-                </span>
-                <span>每日学习计划</span>
-              </span>
-              <span className="nav-badge">{pacingMinutes}m</span>
-            </button>
-          </li>
-
-          <li>
-            <button
-              type="button"
-              className={`nav-item-btn ${activeTab === 'bridge' ? 'active' : ''}`}
-              onClick={() => setActiveTab('bridge')}
-            >
-              <span className="nav-item-left">
-                <span className="nav-icon-slot">
-                  <Compass size={16} strokeWidth={1.5} />
-                </span>
-                <span>ADM + 编程先导营</span>
-              </span>
-              <span className="nav-badge">
-                {completedBridgeCount}/{BRIDGE_LESSONS.length}
-              </span>
-            </button>
-          </li>
-
-          <li>
-            <button
-              type="button"
-              className={`nav-item-btn ${activeTab === 'curriculum' ? 'active' : ''}`}
-              onClick={() => setActiveTab('curriculum')}
-            >
-              <span className="nav-item-left">
-                <span className="nav-icon-slot">
-                  <BookOpen size={16} strokeWidth={1.5} />
-                </span>
-                <span>体系课程库</span>
-              </span>
-              <span className="nav-badge">
-                {state.completedLessonIds.length}/{CURRICULUM_LESSONS.length}
-              </span>
-            </button>
-          </li>
-
-          <li>
-            <button
-              type="button"
-              className={`nav-item-btn ${activeTab === 'coding-lab' ? 'active' : ''}`}
-              onClick={() => setActiveTab('coding-lab')}
-            >
-              <span className="nav-item-left">
-                <span className="nav-icon-slot">
-                  <Code2 size={16} strokeWidth={1.5} />
-                </span>
-                <span>编程实战实验室</span>
-              </span>
-              <span className="nav-badge">
-                {completedChallengesCount}/{CODING_CHALLENGES.length}
-              </span>
-            </button>
-          </li>
-
-          <li>
-            <button
-              type="button"
-              className={`nav-item-btn ${activeTab === 'exam-prep' ? 'active' : ''}`}
-              onClick={() => {
-                setFilterWrongOnly(false);
-                setActiveTab('exam-prep');
-              }}
-            >
-              <span className="nav-item-left">
-                <span className="nav-icon-slot">
-                  <HelpCircle size={16} strokeWidth={1.5} />
-                </span>
-                <span>PD1 / PD2 认证题库</span>
-              </span>
-              <span className="nav-badge">{allQuestionsCount}</span>
-            </button>
-          </li>
-
-          <li>
-            <button
-              type="button"
-              className={`nav-item-btn ${activeTab === 'flashcards' ? 'active' : ''}`}
-              onClick={() => setActiveTab('flashcards')}
-            >
-              <span className="nav-item-left">
-                <span className="nav-icon-slot">
-                  <Layers size={16} strokeWidth={1.5} />
-                </span>
-                <span>闪卡与速查表</span>
-              </span>
-              <span className="nav-badge">{FLASHCARDS_DATA.length}</span>
-            </button>
-          </li>
+          {state.storyMode &&
+            navItem('shelter', <Home size={16} strokeWidth={1.5} />, '窝窝救助站', `${adoptedCount}/${CURRICULUM_LESSONS.length}`)}
+          {navItem('planner', <Calendar size={16} strokeWidth={1.5} />, '每日学习计划', `${pacingMinutes}m`)}
+          {navItem(
+            'bridge',
+            <Compass size={16} strokeWidth={1.5} />,
+            'ADM + 编程先导营',
+            `${completedBridgeCount}/${BRIDGE_LESSONS.length}`
+          )}
+          {navItem(
+            'curriculum',
+            <BookOpen size={16} strokeWidth={1.5} />,
+            '体系课程库',
+            `${state.completedLessonIds.length}/${CURRICULUM_LESSONS.length}`
+          )}
+          {navItem(
+            'coding-lab',
+            <Code2 size={16} strokeWidth={1.5} />,
+            '编程实战实验室',
+            `${completedChallengesCount}/${CODING_CHALLENGES.length}`
+          )}
+          {navItem('exam-prep', <HelpCircle size={16} strokeWidth={1.5} />, 'PD1 / PD2 认证题库', allQuestionsCount, () => {
+            setFilterWrongOnly(false);
+            setActiveTab('exam-prep');
+          })}
+          {navItem('flashcards', <Layers size={16} strokeWidth={1.5} />, '闪卡与速查表', FLASHCARDS_DATA.length)}
         </ul>
 
-        {/* Sidebar Footer: Overall Exam Readiness & Backup */}
+        {/* Sidebar Footer: Exam Readiness & Backup */}
         <div className="sidebar-footer">
           <div className="exam-readiness-box">
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '8px',
-              }}
-            >
-              <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                综合备考指数
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>考场准备度</span>
               <span
                 className="tabular"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: '12px',
                   fontWeight: 500,
-                  color:
-                    readinessScore >= 68
-                      ? 'var(--color-positive)'
-                      : 'var(--text-primary)',
+                  color: readinessScore >= 68 ? 'var(--color-positive)' : 'var(--text-primary)',
                 }}
               >
                 {readinessScore}%
@@ -436,10 +422,7 @@ export function App() {
                 style={{ width: `${Math.max(4, readinessScore)}%` }}
               />
             </div>
-            <div
-              className="tabular"
-              style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}
-            >
+            <div className="tabular" style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
               官方通过线 68% · 本地自动保存
             </div>
           </div>
@@ -461,29 +444,42 @@ export function App() {
 
       {/* Main Content Area */}
       <div className="main-area">
-        {/* Sticky Top Header */}
         <header className="top-bar">
           <div className="top-bar-left">
-            <span className="top-bar-meta">
-              连续打卡 <strong>{state.streakDays}d</strong>
-            </span>
+            {state.storyMode ? (
+              <span className="top-bar-meta">
+                已回家 <strong>{adoptedCount} 只</strong>
+              </span>
+            ) : (
+              <span className="top-bar-meta">
+                考纲覆盖 <strong>{allQuestionsCount} 题</strong>
+              </span>
+            )}
             <span className="meta-divider" aria-hidden="true" />
             <span className="top-bar-meta">
               累计学习 <strong>{state.totalMinutesStudied}m</strong>
             </span>
-            <span className="meta-divider" aria-hidden="true" />
-            <span className="top-bar-meta">
-              考纲覆盖 <strong>{allQuestionsCount} 题</strong>
-            </span>
           </div>
 
           <div className="top-bar-right">
-            {/* Global Bilingual / EN Exam / ZH Switcher */}
-            <div
-              role="group"
-              aria-label="语言显示模式切换"
-              className="pill-tab-group"
-            >
+            <div role="group" aria-label="界面模式" className="pill-tab-group">
+              <button
+                type="button"
+                className={`pill-tab ${state.storyMode ? 'selected' : ''}`}
+                onClick={() => handleSetStoryMode(true)}
+              >
+                窝窝
+              </button>
+              <button
+                type="button"
+                className={`pill-tab ${!state.storyMode ? 'selected' : ''}`}
+                onClick={() => handleSetStoryMode(false)}
+              >
+                专注备考
+              </button>
+            </div>
+
+            <div role="group" aria-label="语言显示模式切换" className="pill-tab-group">
               {(
                 [
                   { id: 'bilingual', label: '中英双语' },
@@ -497,9 +493,7 @@ export function App() {
                     key={mode.id}
                     type="button"
                     className={`pill-tab ${active ? 'selected' : ''}`}
-                    onClick={() =>
-                      setState((prev) => ({ ...prev, languageMode: mode.id }))
-                    }
+                    onClick={() => setState((prev) => ({ ...prev, languageMode: mode.id }))}
                   >
                     {mode.label}
                   </button>
@@ -513,28 +507,27 @@ export function App() {
               style={{ minHeight: '32px', padding: '4px 12px' }}
               onClick={() => setTimerRunning((r) => !r)}
             >
-              {timerRunning ? (
-                <Pause size={16} strokeWidth={1.5} />
-              ) : (
-                <Play size={16} strokeWidth={1.5} />
-              )}
+              {timerRunning ? <Pause size={16} strokeWidth={1.5} /> : <Play size={16} strokeWidth={1.5} />}
               <span className="tabular">
                 {timerRunning
-                  ? `计时中 ${Math.floor(sessionSeconds / 60)}:${String(
-                      sessionSeconds % 60
-                    ).padStart(2, '0')}`
+                  ? `计时中 ${Math.floor(sessionSeconds / 60)}:${String(sessionSeconds % 60).padStart(2, '0')}`
                   : '专注计时'}
               </span>
             </button>
           </div>
         </header>
 
-        {/* Active Workspace View */}
         <main className="workspace-container">
+          {activeTab === 'shelter' && state.storyMode && (
+            <ShelterHomeView state={state} onOpenTicket={handleOpenTicket} />
+          )}
+
           {activeTab === 'planner' && (
             <ElasticPlannerView
               state={state}
               onUpdateState={setState}
+              storyMode={state.storyMode}
+              onOpenTicket={handleOpenTicket}
               onNavigateToLesson={(lessonId) => {
                 setActiveLessonId(lessonId);
                 setActiveTab('curriculum');
@@ -614,13 +607,22 @@ export function App() {
           )}
 
           {activeTab === 'flashcards' && (
-            <FlashcardsAndCheatSheetView
-              state={state}
-              onRateFlashcard={handleRateFlashcard}
-            />
+            <FlashcardsAndCheatSheetView state={state} onRateFlashcard={handleRateFlashcard} />
           )}
         </main>
       </div>
+
+      <MoodCheckInDialog open={checkInOpen} onChoose={handleChooseMood} onClose={handleCloseCheckIn} />
+
+      <StoryUnlockDialog
+        story={unlockStory}
+        reflection={unlockLessonId ? state.reflections[unlockLessonId] || '' : ''}
+        onSaveReflection={(text) => {
+          if (!unlockLessonId) return;
+          setState((prev) => ({ ...prev, reflections: { ...prev.reflections, [unlockLessonId]: text } }));
+        }}
+        onClose={handleCloseUnlock}
+      />
 
       {/* Native <dialog closedby="any"> for Data Backup / Import / Reset */}
       <dialog
@@ -629,29 +631,16 @@ export function App() {
         className="linear-dialog"
         aria-labelledby="backupDialogTitle"
       >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '16px',
-          }}
-        >
-          <h2 id="backupDialogTitle" className="headline-md">
-            本地学习档案备份与恢复
-          </h2>
-          <button
-            type="button"
-            className="btn-tertiary"
-            onClick={() => backupDialogRef.current?.close()}
-          >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 id="backupDialogTitle" className="headline-md">本地学习档案备份与恢复</h2>
+          <button type="button" className="btn-tertiary" onClick={() => backupDialogRef.current?.close()}>
             <span>关闭</span>
             <kbd className="keycap">Esc</kbd>
           </button>
         </div>
 
         <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-          所有学习进度、笔记、代码提交记录、错题本与自定义考题均自动保存在当前浏览器的{' '}
+          所有学习进度、笔记、代码提交记录、错题本、自定义考题与陪伴日志均自动保存在当前浏览器的{' '}
           <code>localStorage</code> 中，可随时导出为 JSON 文件归档。
         </p>
 
@@ -667,23 +656,14 @@ export function App() {
             style={{
               fontSize: '13px',
               marginBottom: '12px',
-              color: importFeedback.ok
-                ? 'var(--color-positive)'
-                : 'var(--color-negative)',
+              color: importFeedback.ok ? 'var(--color-positive)' : 'var(--color-negative)',
             }}
           >
             {importFeedback.text}
           </div>
         )}
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '8px',
-          }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <button
             type="button"
             className="btn-secondary"
@@ -697,18 +677,10 @@ export function App() {
           </button>
 
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleImportJson}
-            >
+            <button type="button" className="btn-secondary" onClick={handleImportJson}>
               <Upload size={16} strokeWidth={1.5} /> 从 JSON 恢复
             </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={handleExportJson}
-            >
+            <button type="button" className="btn-primary" onClick={handleExportJson}>
               <Download size={16} strokeWidth={1.5} /> 下载备份文件
             </button>
           </div>

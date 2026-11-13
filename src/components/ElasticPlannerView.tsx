@@ -19,6 +19,8 @@ import {
   buildElasticDailyPlan,
   getPacingConfig,
 } from '../utils/storageAndPlanner';
+import { TicketQueue } from './story/TicketQueue';
+import { ticketsFromPlan, StoryTicket } from '../utils/story';
 
 interface ElasticPlannerViewProps {
   state: UserAppState;
@@ -28,6 +30,8 @@ interface ElasticPlannerViewProps {
   onNavigateToQuestion: (questionId: string, filterWrongOnly?: boolean) => void;
   onNavigateToFlashcards: () => void;
   onNavigateToBridge?: () => void;
+  storyMode?: boolean;
+  onOpenTicket?: (ticket: StoryTicket) => void;
 }
 
 const EXAM_DOMAINS: {
@@ -70,6 +74,8 @@ export const ElasticPlannerView: React.FC<ElasticPlannerViewProps> = ({
   onNavigateToQuestion,
   onNavigateToFlashcards,
   onNavigateToBridge,
+  storyMode = false,
+  onOpenTicket,
 }) => {
   const plan = buildElasticDailyPlan(state);
   const pacingConfig = getPacingConfig(state.pacingMode);
@@ -237,12 +243,10 @@ export const ElasticPlannerView: React.FC<ElasticPlannerViewProps> = ({
       {/* Compact 4-Stat Strip (Equal height, tabular figures + reference context only) */}
       <div className="grid-4">
         <div className="surface-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <span className="eyebrow-text">综合备考指数</span>
+          <span className="eyebrow-text">考场准备度</span>
           <div className="stat-figure">{readinessScore}%</div>
           <span className="tabular" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            {readinessScore >= 68
-              ? `高于 68% 官方通过线 +${readinessScore - 68}%`
-              : `距 68% 官方通过线差 ${68 - readinessScore}%`}
+            官方通过线 68%
           </span>
         </div>
 
@@ -386,6 +390,9 @@ export const ElasticPlannerView: React.FC<ElasticPlannerViewProps> = ({
           </div>
 
           {/* Task Rows */}
+          {storyMode && onOpenTicket ? (
+            <TicketQueue tickets={ticketsFromPlan(plan.tasks, state)} onOpen={onOpenTicket} />
+          ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {(() => {
               const firstPendingId = plan.tasks.find((t) => !t.completed)?.id;
@@ -457,6 +464,7 @@ export const ElasticPlannerView: React.FC<ElasticPlannerViewProps> = ({
               });
             })()}
           </div>
+          )}
         </div>
 
         {/* Right: The One Rich Visual Moment — Official Exam Blueprint Mastery & 68% Pass Line Chart */}
