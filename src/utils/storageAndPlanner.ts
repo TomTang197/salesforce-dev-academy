@@ -10,6 +10,7 @@ import { CURRICULUM_LESSONS } from '../data/curriculum';
 import { CODING_CHALLENGES } from '../data/challenges';
 import { EXAM_QUESTIONS } from '../data/questions';
 import { FLASHCARDS_DATA, MOCK_ORG_TABLES } from '../data/flashcards';
+import { getReviewQueue } from './srs';
 
 const STORAGE_KEY = 'forcecraft_academy_state_v1';
 
@@ -55,6 +56,8 @@ export const INITIAL_APP_STATE: UserAppState = {
   seenStoryBeats: ['L01'],
   lastCheckInDate: null,
   reflections: {},
+  lastBackupAt: null,
+  backupReminderSnoozedUntil: null,
 };
 
 export function loadAppState(): UserAppState {
@@ -237,21 +240,26 @@ export function buildElasticDailyPlan(state: UserAppState): {
     accumulatedMinutes += secondLesson.estimatedMinutes;
   }
 
-  // 5. Active Recall Flashcards (10 mins)
-  const reviewedCardsCount = Object.values(state.flashcardStates).filter(
-    (f) => f.confidence === 'good' || f.confidence === 'easy'
-  ).length;
+  // 5. Spaced-repetition flashcards: due reviews first, then a few new cards
+  const queue = getReviewQueue(FLASHCARDS_DATA, state.flashcardStates, Date.now());
+  const flashMinutes = queue.all.length === 0 ? 5 : Math.min(15, Math.max(5, queue.all.length * 2));
   tasks.push({
     id: 'task-flashcards-daily',
     type: 'flashcards',
-    title: '高频考点闪卡速记（Governor Limits & 执行顺序）',
-    subtitle: `已熟练掌握 ${reviewedCardsCount}/${FLASHCARDS_DATA.length} 张核心记忆卡`,
-    minutes: 10,
-    completed: reviewedCardsCount >= Math.min(5, FLASHCARDS_DATA.length),
-    targetId: FLASHCARDS_DATA[0].id,
+    title:
+      queue.due.length > 0
+        ? `闪卡复习：${queue.due.length} 张到期`
+        : '高频考点闪卡速记（Governor Limits & 执行顺序）',
+    subtitle:
+      queue.all.length === 0
+        ? '今天的卡都翻完了'
+        : `${queue.due.length} 张到期复习 · ${queue.fresh.length} 张新卡`,
+    minutes: flashMinutes,
+    completed: queue.all.length === 0,
+    targetId: queue.all[0] ?? FLASHCARDS_DATA[0].id,
     badge: '记忆闪卡',
   });
-  accumulatedMinutes += 10;
+  accumulatedMinutes += flashMinutes;
 
   const completedMinutesToday = tasks
     .filter((t) => t.completed)

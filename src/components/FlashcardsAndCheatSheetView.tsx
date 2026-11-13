@@ -7,6 +7,12 @@ import {
 } from 'lucide-react';
 import { UserAppState } from '../types';
 import { FLASHCARDS_DATA } from '../data/flashcards';
+import {
+  getReviewQueue,
+  getNextDueAt,
+  nextIntervalMs,
+  describeInterval,
+} from '../utils/srs';
 
 interface FlashcardsAndCheatSheetViewProps {
   state: UserAppState;
@@ -27,22 +33,40 @@ const CONFIDENCE_LABELS: Record<'unseen' | 'again' | 'hard' | 'good' | 'easy', s
 export const FlashcardsAndCheatSheetView: React.FC<
   FlashcardsAndCheatSheetViewProps
 > = ({ state, onRateFlashcard }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const now = Date.now();
+  const queue = getReviewQueue(FLASHCARDS_DATA, state.flashcardStates, now);
+  const [selectedCategory, setSelectedCategory] = useState<string>(() =>
+    queue.all.length > 0 ? 'DUE' : 'ALL'
+  );
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [flipped, setFlipped] = useState<boolean>(false);
 
-  const filteredCards = FLASHCARDS_DATA.filter((c) =>
-    selectedCategory === 'ALL' ? true : c.category === selectedCategory
-  );
+  const isDueMode = selectedCategory === 'DUE';
+  const filteredCards = isDueMode
+    ? queue.all
+        .map((id) => FLASHCARDS_DATA.find((c) => c.id === id))
+        .filter((c): c is (typeof FLASHCARDS_DATA)[number] => Boolean(c))
+    : FLASHCARDS_DATA.filter((c) =>
+        selectedCategory === 'ALL' ? true : c.category === selectedCategory
+      );
 
-  const currentCard = filteredCards[currentIndex % filteredCards.length] || FLASHCARDS_DATA[0];
+  const dueQueueEmpty = isDueMode && filteredCards.length === 0;
+  const currentCard = isDueMode
+    ? filteredCards[0] || FLASHCARDS_DATA[0]
+    : filteredCards[currentIndex % filteredCards.length] || FLASHCARDS_DATA[0];
   const cardState = state.flashcardStates[currentCard.id];
   const langMode = state.languageMode || 'bilingual';
+  const nextDueAt = getNextDueAt(state.flashcardStates, now);
+
+  const previewInterval = (confidence: 'again' | 'hard' | 'good' | 'easy') => {
+    const success = confidence === 'good' || confidence === 'easy';
+    return describeInterval(nextIntervalMs(confidence, success ? cardState?.streak ?? 0 : 0));
+  };
 
   const handleRate = (confidence: 'again' | 'hard' | 'good' | 'easy') => {
     onRateFlashcard(currentCard.id, confidence);
     setFlipped(false);
-    setCurrentIndex((prev) => (prev + 1) % filteredCards.length);
+    if (!isDueMode) setCurrentIndex((prev) => (prev + 1) % filteredCards.length);
   };
 
   return (
@@ -69,6 +93,17 @@ export const FlashcardsAndCheatSheetView: React.FC<
           </div>
 
           <div className="pill-tab-group" style={{ flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={`pill-tab tabular ${isDueMode ? 'selected' : ''}`}
+              onClick={() => {
+                setSelectedCategory('DUE');
+                setCurrentIndex(0);
+                setFlipped(false);
+              }}
+            >
+              今日待复习 ({queue.all.length})
+            </button>
             {(
               [
                 'ALL',
@@ -96,6 +131,29 @@ export const FlashcardsAndCheatSheetView: React.FC<
         </div>
 
         {/* Interactive Card Box */}
+        {dueQueueEmpty ? (
+          <div
+            className="surface-panel-inset"
+            style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start' }}
+          >
+            <h2 className="headline-md">今天的卡都翻完了</h2>
+            <p className="tabular" style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              {nextDueAt
+                ? `下一张卡会在 ${describeInterval(nextDueAt - now)}回来找你。记忆在休息的时候也在巩固。`
+                : '还没有复习过的卡片。'}
+            </p>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setSelectedCategory('ALL');
+                setCurrentIndex(0);
+              }}
+            >
+              自由浏览全部闪卡
+            </button>
+          </div>
+        ) : (
         <div
           className="surface-panel-inset"
           style={{
@@ -120,12 +178,13 @@ export const FlashcardsAndCheatSheetView: React.FC<
             >
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <span className="nav-badge">
-                  {(currentIndex % filteredCards.length) + 1} / {filteredCards.length}
+                  {isDueMode ? `剩余 ${filteredCards.length}` : `${(currentIndex % filteredCards.length) + 1} / ${filteredCards.length}`}
                 </span>
                 <span className="status-badge">{currentCard.category}</span>
                 {cardState && (
                   <span className="status-badge success">
                     上次评级：{CONFIDENCE_LABELS[cardState.confidence]}
+                    {cardState.nextReviewAt > now ? ` · 下次 ${describeInterval(cardState.nextReviewAt - now)}` : ' · 已到期'}
                   </span>
                 )}
               </div>
@@ -262,21 +321,24 @@ export const FlashcardsAndCheatSheetView: React.FC<
                   className="btn-secondary"
                   onClick={() => handleRate('again')}
                 >
-                  1 · 需重学 (Again)
+                  <span>1 · 需重学 (Again)</span>
+                  <span className="nav-badge">{previewInterval('again')}</span>
                 </button>
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => handleRate('hard')}
                 >
-                  2 · 较模糊 (Hard)
+                  <span>2 · 较模糊 (Hard)</span>
+                  <span className="nav-badge">{previewInterval('hard')}</span>
                 </button>
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => handleRate('good')}
                 >
-                  3 · 已掌握 (Good)
+                  <span>3 · 已掌握 (Good)</span>
+                  <span className="nav-badge">{previewInterval('good')}</span>
                 </button>
                 <button
                   type="button"
@@ -285,11 +347,13 @@ export const FlashcardsAndCheatSheetView: React.FC<
                 >
                   <CheckCircle2 size={16} strokeWidth={1.5} />
                   <span>4 · 熟练秒答 (Easy)</span>
+                  <span className="nav-badge" style={{ color: 'inherit', opacity: 0.7 }}>{previewInterval('easy')}</span>
                 </button>
               </div>
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Searchable Native <details> Exclusive Disclosure Cheat Sheets */}

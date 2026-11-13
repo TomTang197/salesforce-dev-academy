@@ -21,6 +21,14 @@ import {
   ExamOption,
 } from '../types';
 import { EXAM_QUESTIONS, EXAM_BLUEPRINT_COVERAGE } from '../data/questions';
+import {
+  buildMockExam,
+  certPool,
+  mockExamMinutes,
+  scoreByDomain,
+  domainShortName,
+  CertLevel,
+} from '../utils/examBuilder';
 
 interface ExamSimulatorViewProps {
   state: UserAppState;
@@ -112,6 +120,8 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
   >({});
   const [mockSecondsLeft, setMockSecondsLeft] = useState<number>(25 * 60);
   const [mockSubmitted, setMockSubmitted] = useState<boolean>(false);
+  const [mockCert, setMockCert] = useState<CertLevel>('PD1');
+  const [mockTarget, setMockTarget] = useState<number>(0);
 
   // Native <dialog closedby="any"> ref for Custom Question Creator
   const customDialogRef = useRef<HTMLDialogElement | null>(null);
@@ -201,15 +211,14 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
     onRecordAttempt(currentQuestion.id, selectedOptions, isCorrect);
   };
 
-  const handleStartMockExam = (count: number) => {
-    const shuffled = [...allQuestions]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, Math.min(count, allQuestions.length));
-    setMockQuestions(shuffled);
+  const handleStartMockExam = (cert: CertLevel, count: number) => {
+    const picked = buildMockExam(allQuestions, { cert, count });
+    setMockQuestions(picked);
+    setMockCert(cert);
+    setMockTarget(count);
     setMockIndex(0);
     setMockAnswers({});
-    const minutes = count >= 60 ? 105 : count >= 30 ? 50 : 25;
-    setMockSecondsLeft(minutes * 60);
+    setMockSecondsLeft(mockExamMinutes(cert, picked.length) * 60);
     setMockSubmitted(false);
     setMode('mock-exam');
   };
@@ -218,6 +227,9 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
     setMockSubmitted(true);
     mockQuestions.forEach((q) => {
       const chosen = mockAnswers[q.id] || [];
+      // Unanswered questions still count against the score, but aren't
+      // dumped into the wrong-answer book.
+      if (chosen.length === 0) return;
       const correct = checkIsCorrect(q, chosen);
       onRecordAttempt(q.id, chosen, correct);
     });
@@ -301,6 +313,9 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
   const currentIdxInFiltered = filteredQuestions.findIndex(
     (q) => q.id === currentQuestion?.id
   );
+  const pd2PoolSize = certPool(allQuestions, 'PD2').length;
+  const isMock = (cert: CertLevel, count: number) =>
+    mode === 'mock-exam' && mockCert === cert && mockTarget === count;
   const wrongQuestionsCount = Object.values(state.questionAttempts).filter(
     (a) => !a.isCorrect && !a.masteredFromWrongBook
   ).length;
@@ -353,17 +368,24 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
           </button>
           <button
             type="button"
-            className={`pill-tab tabular ${mode === 'mock-exam' && mockQuestions.length === 15 ? 'selected' : ''}`}
-            onClick={() => handleStartMockExam(15)}
+            className={`pill-tab tabular ${isMock('PD1', 15) ? 'selected' : ''}`}
+            onClick={() => handleStartMockExam('PD1', 15)}
           >
-            15 题快测 (25m)
+            PD1 快测 15 题 ({mockExamMinutes('PD1', 15)}m)
           </button>
           <button
             type="button"
-            className={`pill-tab tabular ${mode === 'mock-exam' && mockQuestions.length === 60 ? 'selected' : ''}`}
-            onClick={() => handleStartMockExam(60)}
+            className={`pill-tab tabular ${isMock('PD1', 60) ? 'selected' : ''}`}
+            onClick={() => handleStartMockExam('PD1', 60)}
           >
-            60 题标准模考 (105m)
+            PD1 全真模考 60 题 (105m)
+          </button>
+          <button
+            type="button"
+            className={`pill-tab tabular ${isMock('PD2', 60) ? 'selected' : ''}`}
+            onClick={() => handleStartMockExam('PD2', 60)}
+          >
+            PD2 专项 {pd2PoolSize} 题 ({mockExamMinutes('PD2', pd2PoolSize)}m)
           </button>
         </div>
 
@@ -1164,29 +1186,29 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
               >
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <span className="status-badge primary">
-                    模拟考场 · {mockIndex + 1} / {mockQuestions.length}
+                    {mockCert} 模拟考场 · {mockIndex + 1} / {mockQuestions.length}
                   </span>
                   <div className="pill-tab-group">
                     <button
                       type="button"
-                      className={`pill-tab tabular ${mockQuestions.length === 15 ? 'selected' : ''}`}
-                      onClick={() => handleStartMockExam(15)}
+                      className={`pill-tab tabular ${isMock('PD1', 15) ? 'selected' : ''}`}
+                      onClick={() => handleStartMockExam('PD1', 15)}
                     >
-                      15 题 (25m)
+                      PD1 15 题
                     </button>
                     <button
                       type="button"
-                      className={`pill-tab tabular ${mockQuestions.length === 30 ? 'selected' : ''}`}
-                      onClick={() => handleStartMockExam(30)}
+                      className={`pill-tab tabular ${isMock('PD1', 30) ? 'selected' : ''}`}
+                      onClick={() => handleStartMockExam('PD1', 30)}
                     >
-                      30 题 (50m)
+                      PD1 30 题
                     </button>
                     <button
                       type="button"
-                      className={`pill-tab tabular ${mockQuestions.length === 60 ? 'selected' : ''}`}
-                      onClick={() => handleStartMockExam(60)}
+                      className={`pill-tab tabular ${isMock('PD1', 60) ? 'selected' : ''}`}
+                      onClick={() => handleStartMockExam('PD1', 60)}
                     >
-                      60 题 (105m)
+                      PD1 60 题
                     </button>
                   </div>
                 </div>
@@ -1387,18 +1409,18 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
                         <button
                           type="button"
                           className="btn-secondary"
-                          onClick={() => handleStartMockExam(15)}
+                          onClick={() => handleStartMockExam(mockCert, mockTarget)}
                         >
                           <RotateCcw size={16} strokeWidth={1.5} />
-                          <span>再测 15 题</span>
+                          <span>同样配置再测一次</span>
                         </button>
                         <button
                           type="button"
                           className="btn-secondary"
-                          onClick={() => handleStartMockExam(60)}
+                          onClick={() => handleStartMockExam('PD1', 60)}
                         >
                           <RotateCcw size={16} strokeWidth={1.5} />
-                          <span>60 题标准卷</span>
+                          <span>PD1 全真 60 题</span>
                         </button>
                         <button
                           type="button"
@@ -1412,6 +1434,10 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
                         </button>
                       </div>
                     </div>
+
+                    <DomainBreakdown
+                      scores={scoreByDomain(mockQuestions, (q) => checkIsCorrect(q, mockAnswers[q.id] || []))}
+                    />
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {mockQuestions.map((q, idx) => {
@@ -1470,6 +1496,36 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
           )}
         </div>
       )}
+    </div>
+  );
+};
+
+const DomainBreakdown: React.FC<{ scores: ReturnType<typeof scoreByDomain> }> = ({ scores }) => {
+  if (scores.length === 0) return null;
+  const weakest = [...scores].sort((a, b) => a.pct - b.pct)[0];
+  return (
+    <div className="surface-panel-inset" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '13px', fontWeight: 500 }}>分领域表现</span>
+        {weakest.pct < 68 && (
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            最值得先补的是 {domainShortName(weakest.domain)}
+          </span>
+        )}
+      </div>
+      {scores.map((s) => (
+        <div key={s.domain} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div className="tabular" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>{domainShortName(s.domain)}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', color: s.pct >= 68 ? 'var(--color-positive)' : 'var(--text-secondary)' }}>
+              {s.correct}/{s.total} · {s.pct}%
+            </span>
+          </div>
+          <div className="progress-track">
+            <div className={`progress-fill ${s.pct >= 68 ? 'success' : ''}`} style={{ width: `${Math.max(2, s.pct)}%` }} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

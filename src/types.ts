@@ -177,6 +177,9 @@ export interface FlashcardReviewState {
   confidence: 'unseen' | 'again' | 'hard' | 'good' | 'easy';
   nextReviewAt: number;
   reviewCount: number;
+  streak?: number;
+  firstReviewedAt?: number;
+  lastReviewedAt?: number;
 }
 
 export interface UserAppState {
@@ -202,6 +205,8 @@ export interface UserAppState {
   seenStoryBeats: string[];
   lastCheckInDate: string | null;
   reflections: Record<string, string>;
+  lastBackupAt: number | null;
+  backupReminderSnoozedUntil: number | null;
 }
 
 export type Mood = 'tired' | 'calm' | 'energized' | 'drift';
@@ -210,4 +215,5 @@ export interface CompanionLogEntry {
   minutes: number;
   mood?: Mood;
   completedLessonIds: string[];
+  actions?: number;
 }

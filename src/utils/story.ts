@@ -9,6 +9,8 @@ import {
 } from '../data/story/chapters';
 import type { CompanionLogEntry, Mood, UserAppState } from '../types';
 import type { ElasticDailyTaskItem } from './storageAndPlanner';
+import { FLASHCARDS_DATA } from '../data/flashcards';
+import { getReviewQueue } from './srs';
 
 const STORY_BY_LESSON = new Map(LESSON_STORIES.map((s) => [s.lessonId, s] as const));
 const LESSON_BY_ID = new Map(CURRICULUM_LESSONS.map((l) => [l.id, l] as const));
@@ -78,7 +80,7 @@ function shortDomain(domain: string): string {
 
 export function ticketsFromPlan(
   tasks: ElasticDailyTaskItem[],
-  state: Pick<UserAppState, 'questionAttempts'>
+  state: Pick<UserAppState, 'questionAttempts'> & Partial<Pick<UserAppState, 'flashcardStates'>>
 ): StoryTicket[] {
   const wrongCount = Object.values(state.questionAttempts).filter(
     (a) => !a.isCorrect && !a.masteredFromWrongBook
@@ -146,12 +148,22 @@ export function ticketsFromPlan(
       };
     }
 
+    const queue = state.flashcardStates
+      ? getReviewQueue(FLASHCARDS_DATA, state.flashcardStates, Date.now())
+      : null;
+    const dueCount = queue?.due.length ?? 0;
+    const freshCount = queue?.fresh.length ?? 0;
     return {
       ...base,
       requester: CHARACTERS.alan,
-      titleZh: '去喂喂猫吧，顺手翻几张卡',
-      titleEn: 'Feed the cats, flip a few cards',
-      body: '不用想太多，十分钟就好。',
+      titleZh: dueCount > 0 ? `有 ${dueCount} 张卡快忘了，翻一翻？` : '去喂喂猫吧，顺手翻几张卡',
+      titleEn: dueCount > 0 ? `Review ${dueCount} fading cards` : 'Feed the cats, flip a few cards',
+      body:
+        dueCount > 0
+          ? '趁它们还没完全溜走，十分钟就好。'
+          : freshCount > 0
+          ? `今天有 ${freshCount} 张新卡，不用想太多。`
+          : '今天的卡都翻完了，去看看猫就好。',
       footer: `闪卡 · ${task.minutes}m`,
     };
   });
@@ -174,6 +186,10 @@ export function recordCompanionLesson(state: UserAppState, dateKey: string, less
   return withCompanionEntry(state, dateKey, (e) =>
     e.completedLessonIds.includes(lessonId) ? e : { ...e, completedLessonIds: [...e.completedLessonIds, lessonId] }
   );
+}
+
+export function recordCompanionActivity(state: UserAppState, dateKey: string, count = 1): UserAppState {
+  return withCompanionEntry(state, dateKey, (e) => ({ ...e, actions: (e.actions ?? 0) + count }));
 }
 
 export function setCompanionMood(state: UserAppState, dateKey: string, mood: Mood): UserAppState {

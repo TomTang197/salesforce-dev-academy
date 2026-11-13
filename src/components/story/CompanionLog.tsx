@@ -22,6 +22,7 @@ export const CompanionLog: React.FC<CompanionLogProps> = ({ log, reflections }) 
 
   const visitedDays = Object.keys(log).length;
   const totalMinutes = Object.values(log).reduce((sum, e) => sum + e.minutes, 0);
+  const totalActions = Object.values(log).reduce((sum, e) => sum + (e.actions ?? 0), 0);
   const recentReflections = Object.entries(reflections)
     .filter(([, text]) => text.trim())
     .slice(-3)
@@ -37,15 +38,15 @@ export const CompanionLog: React.FC<CompanionLogProps> = ({ log, reflections }) 
           {days.map(({ key, entry }) => (
             <span
               key={key}
-              title={entry ? `${key} · ${entry.minutes} 分钟` : key}
-              className={`companion-dot ${entry ? 'visited' : ''} ${entry && entry.minutes < 20 ? 'light' : ''} ${key === todayKey ? 'today' : ''}`}
+              title={entry ? `${key} · ${entry.minutes} 分钟 · ${entry.actions ?? 0} 次练习` : key}
+              className={`companion-dot ${entry ? 'visited' : ''} ${entry && entry.minutes < 20 && (entry.actions ?? 0) < 10 ? 'light' : ''} ${key === todayKey ? 'today' : ''}`}
             />
           ))}
         </div>
         <p className="tabular" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          陪伴过 {visitedDays} 天 · 共 {totalMinutes} 分钟
+          陪伴过 {visitedDays} 天 · 共 {totalMinutes} 分钟 · {totalActions} 次练习
           <br />
-          中途停下也没关系，这里只记得你来过。
+          刷题、做实验、翻闪卡都算数。中途停下也没关系，这里只记得你来过。
         </p>
       </div>
 

@@ -31,6 +31,7 @@ import {
   addCompanionMinutes,
   recordCompanionLesson,
   setCompanionMood,
+  recordCompanionActivity,
   getAdoptedAnimals,
   getLessonStory,
   StoryTicket,
@@ -44,6 +45,21 @@ import { FlashcardsAndCheatSheetView } from './components/FlashcardsAndCheatShee
 import { ShelterHomeView } from './components/story/ShelterHomeView';
 import { MoodCheckInDialog } from './components/story/MoodCheckInDialog';
 import { StoryUnlockDialog } from './components/story/StoryUnlockDialog';
+import { BackupReminder } from './components/story/BackupReminder';
+import { rateCard } from './utils/srs';
+import { shouldRemindBackup, hasMeaningfulProgress, daysSince, snoozeUntil } from './utils/backup';
+import {
+  FileSyncStatus,
+  supportsFileSync,
+  loadSavedHandle,
+  chooseBackupFile,
+  getPermission,
+  writeBackup,
+  forgetHandle,
+  requestPersistentStorage,
+} from './utils/backupFile';
+
+const FILE_SYNC_KEY = 'forcecraft_last_file_sync';
 
 type ActiveTab = 'shelter' | 'planner' | 'bridge' | 'curriculum' | 'coding-lab' | 'exam-prep' | 'flashcards';
 
@@ -74,6 +90,67 @@ export function App() {
   useEffect(() => {
     saveAppState(state);
   }, [state]);
+
+  // Local-file backup sync (File System Access API, progressive enhancement)
+  const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
+  const [fileSyncStatus, setFileSyncStatus] = useState<FileSyncStatus>(() =>
+    supportsFileSync() ? 'off' : 'unsupported'
+  );
+  const [lastFileSyncAt, setLastFileSyncAt] = useState<number | null>(() => {
+    const raw = localStorage.getItem(FILE_SYNC_KEY);
+    return raw ? Number(raw) : null;
+  });
+
+  const syncToFile = useCallback(async (snapshot: UserAppState) => {
+    const handle = fileHandleRef.current;
+    if (!handle) return;
+    try {
+      await writeBackup(handle, JSON.stringify(snapshot, null, 2));
+      const at = Date.now();
+      localStorage.setItem(FILE_SYNC_KEY, String(at));
+      setLastFileSyncAt(at);
+    } catch {
+      setFileSyncStatus('needs-permission');
+    }
+  }, []);
+
+  useEffect(() => {
+    requestPersistentStorage();
+    loadSavedHandle().then(async (handle) => {
+      if (!handle) return;
+      fileHandleRef.current = handle;
+      setFileSyncStatus((await getPermission(handle, false)) ? 'active' : 'needs-permission');
+    });
+  }, []);
+
+  useEffect(() => {
+    if (fileSyncStatus !== 'active') return;
+    const timer = window.setTimeout(() => syncToFile(state), 1500);
+    return () => window.clearTimeout(timer);
+  }, [state, fileSyncStatus, syncToFile]);
+
+  const handleEnableFileSync = async () => {
+    const handle = await chooseBackupFile();
+    if (!handle) return;
+    fileHandleRef.current = handle;
+    setFileSyncStatus('active');
+    await syncToFile(state);
+  };
+
+  const handleResumeFileSync = async () => {
+    const handle = fileHandleRef.current;
+    if (!handle) return;
+    if (await getPermission(handle as Parameters<typeof getPermission>[0], true)) {
+      setFileSyncStatus('active');
+      await syncToFile(state);
+    }
+  };
+
+  const handleStopFileSync = async () => {
+    await forgetHandle();
+    fileHandleRef.current = null;
+    setFileSyncStatus('off');
+  };
 
   // Modern Web Guidance mandatory fallback for <dialog closedby="any">
   useEffect(() => {
@@ -165,6 +242,7 @@ export function App() {
         },
       },
     }));
+    setState((prev) => recordCompanionActivity(prev, getTodayDateStr()));
   };
 
   const handleRecordQuestionAttempt = (
@@ -174,8 +252,9 @@ export function App() {
   ) => {
     setState((prev) => {
       const prevAttempt = prev.questionAttempts[questionId];
+      const withActivity = recordCompanionActivity(prev, getTodayDateStr());
       return {
-        ...prev,
+        ...withActivity,
         questionAttempts: {
           ...prev.questionAttempts,
           [questionId]: {
@@ -230,17 +309,12 @@ export function App() {
 
   const handleRateFlashcard = (cardId: string, confidence: 'again' | 'hard' | 'good' | 'easy') => {
     setState((prev) => {
-      const existing = prev.flashcardStates[cardId];
+      const withActivity = recordCompanionActivity(prev, getTodayDateStr());
       return {
-        ...prev,
+        ...withActivity,
         flashcardStates: {
           ...prev.flashcardStates,
-          [cardId]: {
-            cardId,
-            confidence,
-            nextReviewAt: Date.now() + 86400000,
-            reviewCount: (existing?.reviewCount || 0) + 1,
-          },
+          [cardId]: rateCard(prev.flashcardStates[cardId], cardId, confidence, Date.now()),
         },
       };
     });
@@ -255,6 +329,7 @@ export function App() {
     a.download = `forcecraft-study-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    setState((prev) => ({ ...prev, lastBackupAt: Date.now(), backupReminderSnoozedUntil: null }));
   };
 
   const handleImportJson = () => {
@@ -286,6 +361,14 @@ export function App() {
       (Object.values(state.questionAttempts).filter((a) => a.isCorrect).length / allQuestionsCount) * 0.3) *
       100
   );
+
+  const nowMs = Date.now();
+  const showBackupReminder =
+    fileSyncStatus === 'needs-permission'
+      ? hasMeaningfulProgress(state) &&
+        !(state.backupReminderSnoozedUntil !== null && nowMs < state.backupReminderSnoozedUntil)
+      : fileSyncStatus !== 'active' && shouldRemindBackup(state, nowMs, lastFileSyncAt);
+  const lastAnyBackup = Math.max(state.lastBackupAt ?? 0, lastFileSyncAt ?? 0) || null;
 
   const handleOpenTicket = (ticket: StoryTicket) => {
     if (ticket.type === 'lesson') {
@@ -425,6 +508,11 @@ export function App() {
             <div className="tabular" style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
               官方通过线 68% · 本地自动保存
             </div>
+            {fileSyncStatus === 'active' && lastFileSyncAt && (
+              <div className="tabular" style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                已同步到本地文件 · {new Date(lastFileSyncAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
           </div>
 
           <button
@@ -518,6 +606,16 @@ export function App() {
         </header>
 
         <main className="workspace-container">
+          {showBackupReminder && (
+            <BackupReminder
+              daysSinceBackup={daysSince(lastAnyBackup, nowMs)}
+              fileSyncStatus={fileSyncStatus}
+              onDownload={handleExportJson}
+              onEnableFileSync={handleEnableFileSync}
+              onResumeFileSync={handleResumeFileSync}
+              onSnooze={() => setState((prev) => ({ ...prev, backupReminderSnoozedUntil: snoozeUntil(Date.now()) }))}
+            />
+          )}
           {activeTab === 'shelter' && state.storyMode && (
             <ShelterHomeView state={state} onOpenTicket={handleOpenTicket} />
           )}
@@ -643,6 +741,25 @@ export function App() {
           所有学习进度、笔记、代码提交记录、错题本、自定义考题与陪伴日志均自动保存在当前浏览器的{' '}
           <code>localStorage</code> 中，可随时导出为 JSON 文件归档。
         </p>
+
+        {fileSyncStatus !== 'unsupported' && (
+          <div className="surface-panel-inset" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px', padding: '12px 16px' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              {fileSyncStatus === 'active'
+                ? '正在自动同步到你选择的本地文件，每次改动后约 2 秒写入。'
+                : fileSyncStatus === 'needs-permission'
+                ? '自动同步已暂停，需要重新授权写入本地文件。'
+                : '可以选一个本地文件，之后每次学习都会自动写入备份。'}
+            </span>
+            {fileSyncStatus === 'active' ? (
+              <button type="button" className="btn-tertiary" onClick={handleStopFileSync}>停止同步</button>
+            ) : fileSyncStatus === 'needs-permission' ? (
+              <button type="button" className="btn-secondary" onClick={handleResumeFileSync}>继续同步</button>
+            ) : (
+              <button type="button" className="btn-secondary" onClick={handleEnableFileSync}>选择同步文件</button>
+            )}
+          </div>
+        )}
 
         <textarea
           className="code-editor-textarea"
