@@ -41,28 +41,28 @@ const EXAM_DOMAINS: {
   desc: string;
 }[] = [
   {
-    domain: 'Process Automation & Logic (30%)',
+    domain: 'Developer Fundamentals (27%)',
+    shortLabel: 'Developer Fundamentals',
+    weight: 27,
+    desc: '多租户与 Governor Limits、数据建模、Apex OOP、共享与 CRUD/FLS、声明式 vs 编程式',
+  },
+  {
+    domain: 'Process Automation & Logic (28%)',
     shortLabel: 'Process Automation & Logic',
-    weight: 30,
-    desc: 'Governor Limits、Trigger 顺序、防递归、异步 Apex、Platform Events',
+    weight: 28,
+    desc: 'Trigger 与执行顺序、SOQL/SOSL/DML、异步 Apex、Flow 与 Apex 协同、Platform Events',
   },
   {
-    domain: 'User Interface / LWC (25%)',
-    shortLabel: 'User Interface / LWC',
+    domain: 'User Interface (25%)',
+    shortLabel: 'User Interface',
     weight: 25,
-    desc: 'LWC 生命周期、@api / CustomEvent / LMS、LDS、@wire 与 refreshApex',
-  },
-  {
-    domain: 'Data Management & SOQL (25%)',
-    shortLabel: 'Data Management & SOQL',
-    weight: 25,
-    desc: '对象关系建模、父子双向 SOQL、SOSL、Aggregate、WITH USER_MODE、LDV',
+    desc: 'LWC 生命周期与通信、@wire 与 refreshApex、LDS、Visualforce 基础',
   },
   {
     domain: 'Testing, Debugging & Deployment (20%)',
     shortLabel: 'Testing, Debugging & Deployment',
     weight: 20,
-    desc: '@TestSetup、startTest/stopTest、HttpCalloutMock、75% 覆盖率、Jest 单测',
+    desc: '@TestSetup、startTest/stopTest、Mock、75% 覆盖率、Debug Log、sf CLI 与部署',
   },
 ];
 

@@ -90,10 +90,12 @@ describe('mock exam builder', () => {
   it('allocates slots by official weight', () => {
     const a = allocateByWeight(60);
     expect(Object.values(a).reduce((x, y) => x + y, 0)).toBe(60);
-    expect(a['Process Automation & Logic (30%)']).toBe(18);
+    expect(a['Process Automation & Logic (28%)']).toBe(17);
+    expect(a['Developer Fundamentals (27%)']).toBe(16);
+    expect(a['User Interface (25%)']).toBe(15);
     expect(a['Testing, Debugging & Deployment (20%)']).toBe(12);
     expect(Object.values(allocateByWeight(15)).reduce((x, y) => x + y, 0)).toBe(15);
-    expect(domainWeight(EXAM_DOMAINS[0])).toBe(0.3);
+    expect(domainWeight(EXAM_DOMAINS[0])).toBe(0.27);
   });
 
   it('builds a PD1-only exam of the requested size with unique questions', () => {
@@ -101,8 +103,8 @@ describe('mock exam builder', () => {
     expect(exam).toHaveLength(60);
     expect(new Set(exam.map((q) => q.id)).size).toBe(60);
     expect(exam.every((q) => q.certLevel === 'PD1')).toBe(true);
-    const process = exam.filter((q) => q.examDomain === 'Process Automation & Logic (30%)').length;
-    expect(process).toBeGreaterThanOrEqual(18);
+    const process = exam.filter((q) => q.examDomain === 'Process Automation & Logic (28%)').length;
+    expect(process).toBeGreaterThanOrEqual(17);
   });
 
   it('returns the whole pool when it is smaller than requested', () => {

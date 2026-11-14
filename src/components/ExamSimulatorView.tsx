@@ -284,7 +284,7 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
       certLevel: 'PD1',
       stage: 'intermediate',
       domain: 'Apex 核心与面向对象 (Apex & OOP)',
-      examDomain: 'Process Automation & Logic (30%)',
+      examDomain: 'Process Automation & Logic (28%)',
       questionType: 'single',
       selectCount: 1,
       scenarioEn: newScenarioEn.trim() || newScenario,

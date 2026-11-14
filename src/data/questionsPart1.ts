@@ -7,7 +7,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -56,7 +56,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'multiple',
     selectCount: 2,
     scenarioEn:
@@ -98,7 +98,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -142,7 +142,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -184,7 +184,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: '安全模型与单元测试 (Security & Testing)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -226,7 +226,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: '安全模型与单元测试 (Security & Testing)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -270,7 +270,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -312,7 +312,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -398,7 +398,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -440,7 +440,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'multiple',
     selectCount: 2,
     scenarioEn:
@@ -482,7 +482,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -526,7 +526,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Trigger 与执行顺序 (Triggers & Order of Execution)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -568,7 +568,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Trigger 与执行顺序 (Triggers & Order of Execution)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -610,7 +610,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Trigger 与执行顺序 (Triggers & Order of Execution)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -652,7 +652,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Trigger 与执行顺序 (Triggers & Order of Execution)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -696,7 +696,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Trigger 与执行顺序 (Triggers & Order of Execution)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -738,7 +738,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD2',
     stage: 'intermediate',
     domain: 'Trigger 与执行顺序 (Triggers & Order of Execution)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -782,7 +782,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -824,7 +824,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -866,7 +866,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -910,7 +910,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -962,7 +962,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1004,7 +1004,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1048,7 +1048,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1090,7 +1090,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1132,7 +1132,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1176,7 +1176,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1218,7 +1218,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1260,7 +1260,7 @@ try {
     certLevel: 'PD2',
     stage: 'intermediate',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1302,7 +1302,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'LWC 现代前端组件 (Lightning Web Components)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1352,7 +1352,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'multiple',
     selectCount: 2,
     scenarioEn:
@@ -1394,7 +1394,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1436,7 +1436,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1478,7 +1478,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD2',
     stage: 'advanced',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1522,7 +1522,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '安全模型与单元测试 (Security & Testing)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1564,7 +1564,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '安全模型与单元测试 (Security & Testing)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1606,7 +1606,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '安全模型与单元测试 (Security & Testing)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1778,7 +1778,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1820,7 +1820,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
-    examDomain: 'Process Automation & Logic (30%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1862,7 +1862,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD1',
     stage: 'advanced',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
-    examDomain: 'User Interface / LWC (25%)',
+    examDomain: 'User Interface (25%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1906,7 +1906,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD2',
     stage: 'architect',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'multiple',
     selectCount: 2,
     scenarioEn:
@@ -1948,7 +1948,7 @@ wiredContacts({ error, data }) {
     certLevel: 'PD2',
     stage: 'architect',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Data Management & SOQL (25%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:

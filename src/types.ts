@@ -11,9 +11,9 @@ export type TechDomain =
   | '安全模型与单元测试 (Security & Testing)';
 
 export type ExamWeightDomain =
-  | 'Process Automation & Logic (30%)'
-  | 'User Interface / LWC (25%)'
-  | 'Data Management & SOQL (25%)'
+  | 'Developer Fundamentals (27%)'
+  | 'Process Automation & Logic (28%)'
+  | 'User Interface (25%)'
   | 'Testing, Debugging & Deployment (20%)';
 
 export type PacingMode = 'relaxed' | 'standard' | 'intensive' | 'weekend';

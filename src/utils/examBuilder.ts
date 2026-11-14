@@ -3,13 +3,13 @@ import type { ExamQuestion, ExamWeightDomain } from '../types';
 export type CertLevel = 'PD1' | 'PD2';
 
 export const EXAM_DOMAINS: ExamWeightDomain[] = [
-  'Process Automation & Logic (30%)',
-  'User Interface / LWC (25%)',
-  'Data Management & SOQL (25%)',
+  'Developer Fundamentals (27%)',
+  'Process Automation & Logic (28%)',
+  'User Interface (25%)',
   'Testing, Debugging & Deployment (20%)',
 ];
 
-/** Reads the weight straight from the domain label, e.g. "(30%)" -> 0.3. */
+/** Reads the weight straight from the domain label, e.g. "(28%)" -> 0.28. */
 export function domainWeight(domain: ExamWeightDomain): number {
   const match = domain.match(/\((\d+)%\)/);
   return match ? Number(match[1]) / 100 : 0;
