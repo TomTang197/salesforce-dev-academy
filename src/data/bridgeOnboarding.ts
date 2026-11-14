@@ -120,7 +120,7 @@ String parentName = inv.Client__r.Name;    // 类型是 String`,
 - 在 Apex 中，专门有一个内置原始数据类型叫 **\`Id\`**（注意不是普通 \`String\`，虽然它可以和 \`String\` 互相隐式转换）。
 - **程序员必知特性**：只要你把一个合法的 15 位 ID 字符串赋值给 \`Id\` 类型变量，Apex 运行时会自动为你计算出后 3 位校验码并转换为 **18 位 ID**！而且在 Apex 中用 \`==\` 比较两个 \`Id\` 变量时，平台会自动把 15 位与对应的 18 位视为相等！`,
         codeSnippet: `Id recordId15 = '0018d00000A1B2C'; // 赋入 15 位 ID
-System.debug(recordId15);           // 自动补齐输出 18 位: '0018d00000A1B2CCAV'
+System.debug(recordId15);           // 自动补齐输出 18 位: '0018d00000A1B2CAAV'
 
 // 如果把非法格式的字符串赋给 Id 类型，会直接抛出 System.StringException: Invalid id!`,
         language: 'apex',
@@ -218,7 +218,7 @@ sf apex run test --test-level RunLocalTests    # 运行云端 Apex 单元测试`
         content: `在 Java / C# / Node.js 中，如果你写一个 \`public static Map<String, Object> cache\`，它会一直驻留在服务器 JVM/V8 进程内存中，所有用户的请求都能共享它。
 **但在 Salesforce 多租户架构中，没有属于你自己的常驻进程！**
 - **Apex 中 \`static\` 变量的生命周期 = 单次数据库事务（Single Transaction）**！
-- 当用户点击一次保存按钮，从 \`before trigger\` → \`after trigger\` → \`Workflow 重跑 trigger\`，这整个链条属于同一个事务，此时 \`static\` 变量是共享的（因此常用来做 **Trigger 防递归锁** 或 **事务内缓存**）。
+- 当用户点击一次保存按钮，从 \`before trigger\` → \`after trigger\` → \`After-Save Flow（或旧版 Workflow 字段更新）再次更新记录而重跑 trigger\`，这整个链条属于同一个事务，此时 \`static\` 变量是共享的（因此常用来做 **Trigger 防递归锁** 或 **事务内缓存**）。
 - 一旦这次点击请求结束返回浏览器，或者开启了一个异步任务（\`@future\` / \`Queueable\`），**所有 \`static\` 变量全部清零重置！**（若需跨事务缓存，必须用 **Platform Cache**）。`,
         codeSnippet: `public class TransactionStateDemo {
     // 注意：这个 count 绝对不会在两个不同用户的请求之间累加！
@@ -231,7 +231,7 @@ sf apex run test --test-level RunLocalTests    # 运行云端 Apex 单元测试`
         heading: '2. 颠覆认知第二条：字符串比较直接用 ==（不区分大小写且防空指针），但 Set/Map 键却区分大小写！',
         content: `在 Java 中，老手都知道比较字符串不能用 \`==\`（比较内存地址），必须写 \`"Hot".equals(acc.Rating)\`。在 JS/TS 中你习惯写 \`===\`。
 **但在 Apex 中：**
-1. **\`==\` 永远做值相等比较（Value Equality）**，即使是 String 或自定义对象，\`==\` 也会自动调用值对比，而且 **两边哪怕有一边是 \`null\` 也绝不会报 \`NullPointerException\`**！
+1. **\`==\` 对 String、sObject、集合做值相等比较（Value Equality）**（注意：自定义 Apex 类的实例默认按引用比较，除非你重写了 \`equals()\` / \`hashCode()\`），而且 **两边哪怕有一边是 \`null\` 也绝不会报 \`NullPointerException\`**！
 2. **String 的 \`==\` 默认不区分大小写（Case-Insensitive）**：在 Apex 里 \`'abc' == 'ABC'\` 的结果是 **\`true\`**！（若需严格区分大小写才调用 \`'abc'.equals('ABC')\`）。
 3. **⚠️ 超级大坑：\`Set<String>\` 和 \`Map<String, Object>\` 的 Key 是区分大小写的！**
    如果你往 \`Set<String>\` 里放了 \`'abc'\` 和 \`'ABC'\`，Set 的 \`.size()\` 会是 **2**！因此用 String 做 Map 的 Key 时，务必养成统一 \`.toLowerCase()\` 的习惯！`,
@@ -327,7 +327,7 @@ Decimal rounded = amount.setScale(2, System.RoundingMode.HALF_UP); // 200.00`,
     estimatedMinutes: 35,
     examFrequency: '极高频必考 (High-Yield)',
     summary:
-      '作为持有 ADM 证的管理员，你对 Record-Triggered Flow（记录触发流）和 Validation Rule 一定了如指掌！実は（实际上），Apex Trigger 的设计哲学与 Record-Triggered Flow 是 100% 同构的！本节用一张“Flow 元素 -> Apex 代码”对照表，让你在 15 分钟内彻底学会写 Trigger 和 SOQL。',
+      '作为持有 ADM 证的管理员，你对 Record-Triggered Flow（记录触发流）和 Validation Rule 一定了如指掌！实际上，Apex Trigger 的设计哲学与 Record-Triggered Flow 是 100% 同构的！本节用一张“Flow 元素 -> Apex 代码”对照表，让你在 15 分钟内彻底学会写 Trigger 和 SOQL。',
     summaryEn:
       'As a Certified Admin, you already know Record-Triggered Flows and Validation Rules inside out. Apex Triggers share the exact same mental model! This lesson translates every Flow element and SQL JOIN directly into Apex Triggers and SOQL.',
     examGlossary: [
@@ -734,7 +734,7 @@ List<Account> accs = [
       howYouDidItAsAdmin:
         '在 ADM 中你学过“权限双塔”：Profile/Permission Set 决定你能不能看到这张表和这个字段（CRUD/FLS）；OWD + 角色层级 + 共享规则决定你能看到哪几行记录（Record Sharing）。',
       limitationWhyCodeNeeded:
-        '自定义 Apex 默认运行在 System Mode（系统模式）下，如果不显式声明安全策略，普通销售员调用你的代码就能看到全公司所有高管薪资字段！',
+        '自定义 Apex 传统上（API v66.0 及更早）默认运行在 System Mode（系统模式）下，如果不显式声明安全策略，普通销售员调用你的代码就能看到全公司所有高管薪资字段！（API v67.0 起新编译的类默认 user mode + with sharing，但考试与存量代码仍以显式声明为准。）',
     },
     generalCoderWorld: {
       badge: 'Java / Node / SQL 视角',
@@ -748,7 +748,7 @@ List<Account> accs = [
       badge: 'Salesforce Developer 写法',
       concept: 'inherited sharing + WITH USER_MODE / Security.stripInaccessible',
       codeSnippet: `// 1. 类头声明 inherited sharing：尊重当前用户的 OWD 与共享规则（管“行”）
-public inherited sharing classCompensationController {
+public inherited sharing class CompensationController {
     @AuraEnabled(cacheable=true)
     public static List<Employee__c> getTeamMembers() {
         // 2. SOQL 加上 WITH USER_MODE：同时强制校验 CRUD + FLS（管“表和列”）+ Sharing（管“行”）！
@@ -895,7 +895,7 @@ export const CODER_MINDSET_SHIFTS: CoderMindsetShift[] = [
     yourOldInstinct:
       '在 Java / C# / Node.js 中，`static` 变量存放在进程内存中，User A 请求修改了 `static count++`，User B 接着请求能读到累加后的值。',
     salesforceReality:
-      'Apex 的 `static` 变量生命周期严格绑定在**单次请求事务（Single Transaction）**内！请求一结束立即销毁。更致命的是：当 Data Loader 一次导入 1,000 条记录时，这 1,000 条记录会拆成 5 批（每批 200 条）在**同一个事务**里连续触发 5 次 Trigger——如果你用简单的 `static Boolean hasRun = true` 防递归，后 800 条记录会被直接吞掉不执行！',
+      'Apex 的 `static` 变量生命周期严格绑定在**单次请求事务（Single Transaction）**内！请求一结束立即销毁。更致命的是：当 Apex 代码用一条 DML 语句一次插入 1,000 条记录时，这 1,000 条记录会拆成 5 批（每批 200 条）在**同一个事务**里连续触发 5 次 Trigger——如果你用简单的 `static Boolean hasRun = true` 防递归，后 800 条记录会被直接吞掉不执行！',
     codeProof: `// ❌ 错误防递归（会吞掉 >200 条以后的所有批次）：
 public static Boolean hasRun = false;
 

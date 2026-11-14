@@ -121,7 +121,7 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
         id: 'D',
         textEn: 'Yes, for `Case` and `Contact` only.',
         text: '仅 `Case` 和 `Contact` 可以。',
-        whyRightOrWrong: '❌ Incorrect (错误).',
+        whyRightOrWrong: '❌ Incorrect (错误): There is no such exception—no standard object can be the detail of a custom master (Contact/Case have their own standard relationships, not custom M-D detail roles). 没有任何标准对象可以作为自定义主对象的子对象。',
       },
     ],
     correctOptionIds: ['A'],
@@ -303,7 +303,7 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Developer Fundamentals (27%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -337,7 +337,7 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
       },
     ],
     correctOptionIds: ['A'],
-    coreTakeaway: 'Custom Exception rules in Apex: 1) Class name MUST end with `Exception`; 2) Must `extends Exception`; 3) Automatically inheritsconstructors like `new MyException(String msg)`.',
+    coreTakeaway: 'Custom Exception rules in Apex: 1) Class name MUST end with `Exception`; 2) Must `extends Exception`; 3) Automatically inherits constructors like `new MyException(String msg)`.',
     officialDocTopic: 'Create Custom Exceptions',
   },
   {
@@ -417,7 +417,7 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
         id: 'D',
         textEn: 'public Object clone()',
         text: 'public Object clone()',
-        whyRightOrWrong: '❌ Incorrect (错误).',
+        whyRightOrWrong: '❌ Incorrect (错误): `clone()` copies objects; hash-based collections never call it to determine uniqueness. clone() 与 Set/Map 去重无关。',
       },
     ],
     correctOptionIds: ['A'],
@@ -429,7 +429,7 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Developer Fundamentals (27%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -441,7 +441,7 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
         id: 'A',
         textEn: '`@InvocableMethod`; there can be at most ONE `@InvocableMethod` per Apex class, and its parameter/return type must be a `List` (bulkified).',
         text: '`@InvocableMethod`；每个 Apex 类最多只能有 **1 个** `@InvocableMethod` 方法，且其入参和返回值必须是 `List` 列表类型（强制批量化）。',
-        whyRightOrWrong: '✅ Correct (正确): `@InvocableMethod` exposes Apex to Flows/Process Builder, allows only 1 invocable method per class, and requires `List<T>` inputs/outputs to support bulkified Flow interviews.',
+        whyRightOrWrong: '✅ Correct (正确): `@InvocableMethod` exposes Apex as an Action in Flow (Process Builder reached end of support on Dec 31, 2025), allows only 1 invocable method per class, and requires `List<T>` inputs/outputs to support bulkified Flow interviews. 仅允许每类 1 个，入参/返回为 List（Process Builder 已于 2025-12-31 停止支持）。',
       },
       {
         id: 'B',
@@ -623,13 +623,13 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
         id: 'C',
         textEn: 'Hardcoded field strings are not supported in JavaScript.',
         text: 'JavaScript 不支持字符串字面量。',
-        whyRightOrWrong: '❌ Incorrect (错误).',
+        whyRightOrWrong: '❌ Incorrect (错误): String field names (e.g., `\'Account.Name\'`) do work in `getRecord`/`fields`, but they create no metadata dependency, so typos and deleted fields are only discovered at runtime. 字符串写法可用，但没有元数据依赖保护。',
       },
       {
         id: 'D',
         textEn: 'It increases the SOQL row limit to 100,000.',
         text: '它能将 SOQL 行数上限提升至 100,000。',
-        whyRightOrWrong: '❌ Incorrect (错误).',
+        whyRightOrWrong: '❌ Incorrect (错误): Schema imports have no effect on governor limits; LDS does not even use Apex SOQL. Schema 导入与 Governor Limit 无关。',
       },
     ],
     correctOptionIds: ['A'],
@@ -645,21 +645,21 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
-      'An LWC component calls an external legacy banking web service that takes **12 seconds** to respond. Because synchronous Apex transactions lasting longer than 5 seconds are capped at **10 concurrent long-running requests** across the entire org, users encounter `ConcurrentPerOrgLongTxn Limit Exceeded` during peak hours. How should the architect redesign this callout from LWC?',
+      'An LWC component must call three slow external legacy banking endpoints (each takes about **20 seconds** to respond) and display the combined result. The architect wants the Apex request to be suspended while waiting—so it does not hold an application server thread—and wants the three requests to run in parallel rather than one after another. How should this callout from LWC be designed?',
     scenario:
-      '某 LWC 组件需要调用一个响应耗时达 **12 秒** 的外部银行接口。由于超过 5 秒的同步请求在整个组织内受限于 **最多 10 个并发长请求（Concurrent Long-Running Apex Limit）**，高峰期频繁报错。架构师应如何重构该 LWC 调用？',
+      '某 LWC 组件需要调用三个响应缓慢的外部银行遗留接口（每个约 **20 秒**）并展示合并结果。架构师希望等待期间挂起 Apex 请求、不占用应用服务器线程，并让三个请求并行而非串行执行。该 LWC 调用应如何设计？',
     options: [
       {
         id: 'A',
-        textEn: 'Use an Asynchronous Callout with the **`Continuation`** class (`@AuraEnabled(continuation=true)`), which suspends the request without holding an Apex server thread or counting toward the 10-concurrent long-running request limit.',
-        text: '使用 **`Continuation`** 类配合 `@AuraEnabled(continuation=true)` 发起异步连续调用，它不会占用同步应用服务器线程，也不计入 10 个并发长请求上限！',
-        whyRightOrWrong: '✅ Correct (正确): `Continuation` is specifically designed for UI-initiated long-running callouts in LWC/Aura/Visualforce so they don\'t exhaust the 10 concurrent synchronous request limit!',
+        textEn: 'Use an Asynchronous Callout with the **`Continuation`** class (`@AuraEnabled(continuation=true)`), adding up to 3 `HttpRequest`s to one Continuation and handling the responses in a callback method.',
+        text: '使用 **`Continuation`** 类配合 `@AuraEnabled(continuation=true)` 发起异步调用，在一个 Continuation 中并行添加最多 3 个 `HttpRequest`，并在回调方法中处理响应。',
+        whyRightOrWrong: '✅ Correct (正确): `Continuation` is designed for UI-initiated long-running callouts from LWC/Aura/Visualforce: the Apex request is suspended (no server thread held) while waiting, one Continuation can run up to 3 callouts in parallel, and the timeout can be up to 120 seconds. Continuation 挂起请求释放线程、单个最多并行 3 个请求、超时上限 120 秒。',
       },
       {
         id: 'B',
         textEn: 'Increase `req.setTimeout(120000)` on the synchronous `HttpRequest`.',
         text: '在同步 `HttpRequest` 上调大 `req.setTimeout(120000)`。',
-        whyRightOrWrong: '❌ Incorrect (错误): A synchronous callout >5s still consumes one of the 10 concurrent long-running request slots.',
+        whyRightOrWrong: '❌ Incorrect (错误): A synchronous request blocks its thread for the whole wait and the three callouts run sequentially (~60 s). (Note: since Winter \'20, HTTP callout wait time is no longer counted toward the 5-second threshold of the concurrent long-running request limit, so this is about thread usage and parallelism, not that limit.) 同步调用全程占用线程且串行执行；自 Winter \'20 起 Callout 等待时间已不计入长请求 5 秒阈值。',
       },
       {
         id: 'C',
@@ -675,7 +675,7 @@ export const QUESTIONS_PART_2: ExamQuestion[] = [
       },
     ],
     correctOptionIds: ['A'],
-    coreTakeaway: 'PD2 High-Yield: Whenever an LWC or Visualforce page makes a slow external HTTP callout (>5 seconds) and hits the **10 concurrent long-running Apex limit**, the answer is **`Continuation` (`@AuraEnabled(continuation=true)`)**!',
+    coreTakeaway: 'PD2 High-Yield: For slow external callouts initiated from LWC/Aura/Visualforce that should not block a server thread (and may run in parallel), use **`Continuation` (`@AuraEnabled(continuation=true)`)**: up to 3 parallel requests per Continuation, up to 3 chained Continuations, 120 s max timeout. Note: since Winter \'20, callout wait time no longer counts toward the concurrent long-running request (5 s) limit. 慢接口 UI 调用 → Continuation。',
     officialDocTopic: 'Make Long-Running Callouts with Continuations',
   },
   {

@@ -21,6 +21,7 @@ import {
   ExamOption,
 } from '../types';
 import { EXAM_QUESTIONS, EXAM_BLUEPRINT_COVERAGE } from '../data/questions';
+import { ExamOptionList } from './ExamOptionList';
 import {
   buildMockExam,
   certPool,
@@ -554,10 +555,10 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
               Salesforce Certification Exam Guide Alignment
             </div>
             <h1 className="headline-xl" style={{ marginBottom: '8px' }}>
-              Platform Developer I & II 考纲覆盖矩阵（{EXAM_QUESTIONS.length} 题）
+              Platform Developer 与 Platform Developer II 考纲覆盖矩阵（{EXAM_QUESTIONS.length} 题）
             </h1>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-              覆盖官方 6 大计分板块与 48 个核心子考点，包含数据建模、LDV 索引选择性、Continuation 异步长连接、动态 Apex 以及跨框架互操作。点击任一题号可直接开始作答。
+              按当前官方考纲归类：PD1 四大计分域（Developer Fundamentals 27% · Process Automation & Logic 28% · User Interface 25% · Testing, Debugging & Deployment 20%），并标注对应的 PD2 板块。点击任一题号可直接开始作答。
             </p>
           </div>
 
@@ -961,111 +962,41 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
                   </pre>
                 )}
 
-                {/* Options List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {currentQuestion.options.map((opt) => {
+                {/* Options List (native radio / checkbox group) */}
+                <ExamOptionList
+                  questionId={currentQuestion.id}
+                  multiple={currentQuestion.questionType === 'multiple'}
+                  selectCount={currentQuestion.selectCount}
+                  options={currentQuestion.options}
+                  selected={selectedOptions}
+                  onToggle={handleToggleOption}
+                  disabled={revealed}
+                  showEnglish={showEnglish}
+                  showChinese={showChinese}
+                  stateFor={(opt) => {
                     const isSelected = selectedOptions.includes(opt.id);
-                    const isRightOption = currentQuestion.correctOptionIds.includes(
-                      opt.id
-                    );
-
-                    let borderColor = isSelected
-                      ? 'var(--color-accent)'
-                      : 'var(--border-hairline)';
-                    let bgColor = isSelected
-                      ? 'var(--color-accent-subtle)'
-                      : 'var(--bg-sidebar)';
-
-                    if (revealed) {
-                      if (isRightOption) {
-                        borderColor = 'var(--color-positive-border)';
-                        bgColor = 'var(--color-positive-subtle)';
-                      } else if (isSelected && !isRightOption) {
-                        borderColor = 'var(--color-negative-border)';
-                        bgColor = 'var(--color-negative-subtle)';
-                      }
-                    }
-
-                    return (
-                      <div
-                        key={opt.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleToggleOption(opt.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleToggleOption(opt.id);
-                          }
-                        }}
+                    if (!revealed) return isSelected ? 'selected' : 'idle';
+                    if (currentQuestion.correctOptionIds.includes(opt.id)) return 'correct';
+                    return isSelected ? 'wrong' : 'idle';
+                  }}
+                  renderAfter={(opt) =>
+                    revealed ? (
+                      <span
                         style={{
-                          padding: '12px 16px',
-                          borderRadius: 'var(--radius-md)',
-                          border: `1px solid ${borderColor}`,
-                          backgroundColor: bgColor,
-                          cursor: revealed ? 'default' : 'pointer',
-                          transition:
-                            'background-color 150ms var(--ease-out), border-color 150ms var(--ease-out)',
+                          marginTop: '8px',
+                          paddingTop: '8px',
+                          borderTop: '1px solid var(--border-hairline)',
+                          fontSize: '13px',
+                          color: currentQuestion.correctOptionIds.includes(opt.id)
+                            ? 'var(--color-positive)'
+                            : 'var(--text-secondary)',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                          <span
-                            style={{
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: 'var(--radius-xs)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              backgroundColor: isSelected
-                                ? 'var(--color-accent)'
-                                : 'var(--bg-raised)',
-                              color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                              flexShrink: 0,
-                            }}
-                          >
-                            {opt.id}
-                          </span>
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {showEnglish && opt.textEn && (
-                              <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 500 }}>
-                                {opt.textEn}
-                              </div>
-                            )}
-                            {showChinese && (
-                              <div
-                                style={{
-                                  fontSize: '13px',
-                                  color: showEnglish ? 'var(--text-secondary)' : 'var(--text-primary)',
-                                }}
-                              >
-                                {opt.text}
-                              </div>
-                            )}
-                            {revealed && (
-                              <div
-                                style={{
-                                  marginTop: '8px',
-                                  paddingTop: '8px',
-                                  borderTop: '1px solid var(--border-hairline)',
-                                  fontSize: '13px',
-                                  color: isRightOption
-                                    ? 'var(--color-positive)'
-                                    : 'var(--text-secondary)',
-                                }}
-                              >
-                                {opt.whyRightOrWrong.replace(/^[✅❌]\s*/, '')}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                        {opt.whyRightOrWrong.replace(/^[✅❌]\s*/, '')}
+                      </span>
+                    ) : null
+                  }
+                />
 
                 {/* Action Footer */}
                 <div
@@ -1266,71 +1197,26 @@ export const ExamSimulatorView: React.FC<ExamSimulatorViewProps> = ({
                       </pre>
                     )}
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                      {mq.options.map((opt) => {
-                        const sel = chosen.includes(opt.id);
-                        return (
-                          <div
-                            key={opt.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => {
-                              const next =
-                                mq.questionType === 'single'
-                                  ? [opt.id]
-                                  : sel
-                                  ? chosen.filter((x) => x !== opt.id)
-                                  : [...chosen, opt.id];
-                              setMockAnswers((prev) => ({ ...prev, [mq.id]: next }));
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                const next =
-                                  mq.questionType === 'single'
-                                    ? [opt.id]
-                                    : sel
-                                    ? chosen.filter((x) => x !== opt.id)
-                                    : [...chosen, opt.id];
-                                setMockAnswers((prev) => ({ ...prev, [mq.id]: next }));
-                              }
-                            }}
-                            style={{
-                              padding: '12px 16px',
-                              borderRadius: 'var(--radius-md)',
-                              border: `1px solid ${
-                                sel ? 'var(--color-accent)' : 'var(--border-hairline)'
-                              }`,
-                              backgroundColor: sel
-                                ? 'var(--color-accent-subtle)'
-                                : 'var(--bg-sidebar)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              gap: '12px',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span className="nav-badge" style={{ marginTop: '2px' }}>
-                              {opt.id}
-                            </span>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              {showEnglish && opt.textEn && (
-                                <span style={{ fontWeight: 500, fontSize: '14px' }}>{opt.textEn}</span>
-                              )}
-                              {(langMode !== 'en-exam' || peekChineseInEnMode) && (
-                                <span
-                                  style={{
-                                    fontSize: '13px',
-                                    color: showEnglish ? 'var(--text-secondary)' : 'var(--text-primary)',
-                                  }}
-                                >
-                                  {opt.text}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div style={{ marginBottom: '20px' }}>
+                      <ExamOptionList
+                        questionId={`mock-${mq.id}`}
+                        multiple={mq.questionType === 'multiple'}
+                        selectCount={mq.selectCount}
+                        options={mq.options}
+                        selected={chosen}
+                        onToggle={(optId) => {
+                          const sel = chosen.includes(optId);
+                          const next =
+                            mq.questionType === 'single'
+                              ? [optId]
+                              : sel
+                              ? chosen.filter((x) => x !== optId)
+                              : [...chosen, optId];
+                          setMockAnswers((prev) => ({ ...prev, [mq.id]: next }));
+                        }}
+                        showEnglish={showEnglish}
+                        showChinese={langMode !== 'en-exam' || peekChineseInEnMode}
+                      />
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>

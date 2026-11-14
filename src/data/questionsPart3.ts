@@ -220,8 +220,8 @@ export const QUESTIONS_PART_3: ExamQuestion[] = [
     "examDomain": "Process Automation & Logic (28%)",
     "questionType": "single",
     "selectCount": 1,
-    "scenarioEn": "An Account record is updated via DML. During the Save Order of Execution, an active Workflow Rule (or Flow after-save field update behavior) performs a cross-field update on the same Account record. What happens to the Account's `before update` and `after update` Apex Triggers?",
-    "scenario": "一条 Account 记录通过 DML 被更新。在保存执行顺序（Save Order of Execution）期间，一条激活的 Workflow Rule 字段更新在同一个 Account 记录上执行了字段修改。此时 Account 的 `before update` 和 `after update` Apex Trigger 会发生什么？",
+    "scenarioEn": "An Account record is updated via DML. During the Save Order of Execution, a legacy active Workflow Rule field update (Workflow Rules reached end of support on Dec 31, 2025 but existing ones still run) modifies the same Account record. What happens to the Account's `before update` and `after update` Apex Triggers?",
+    "scenario": "一条 Account 记录通过 DML 被更新。在保存执行顺序（Save Order of Execution）期间，一条遗留的激活 Workflow Rule 字段更新（Workflow Rules 已于 2025-12-31 停止支持，但已有规则仍会运行）在同一个 Account 记录上执行了字段修改。此时 Account 的 `before update` 和 `after update` Apex Trigger 会发生什么？",
     "options": [
       {
         "id": "A",
@@ -251,7 +251,7 @@ export const QUESTIONS_PART_3: ExamQuestion[] = [
     "correctOptionIds": [
       "A"
     ],
-    "coreTakeaway": "牢记：Workflow Field Update 会让 before update 和 after update Trigger 额外重跑 1 次，但不会重新触发 Custom Validation Rules！而 Before-Save Record-Triggered Flow 在 before trigger 之前运行，根本不会引发重跑。",
+    "coreTakeaway": "牢记：Workflow Field Update 会让 before update 和 after update Trigger 额外重跑 1 次，但不会重新触发 Custom Validation Rules！而 Before-Save Record-Triggered Flow 在 before trigger 之前运行，根本不会引发重跑；After-Save Flow 若更新触发记录本身，则会发起一次全新的保存（含验证规则）。Workflow/Process Builder 已于 2025-12-31 停止支持，新自动化应使用 Flow。(Workflow field updates re-fire before/after update triggers once without re-running custom validation; Workflow Rules & Process Builder are end-of-support since Dec 31, 2025 — build new automation in Flow.)",
     "officialDocTopic": "Order of Execution: Workflow Field Update Trigger Re-entry"
   },
   {
@@ -721,10 +721,10 @@ export const QUESTIONS_PART_3: ExamQuestion[] = [
     "certLevel": "PD1",
     "stage": "intermediate",
     "domain": "Apex 核心与面向对象 (Apex & OOP)",
-    "examDomain": "Developer Fundamentals (27%)",
+    "examDomain": "User Interface (25%)",
     "questionType": "multiple",
     "selectCount": 2,
-    "scenarioEn": "A legacy Visualforce page with a custom Apex controller is throwing a `Maximum view state size limit (170KB) exceeded` error when displaying a large read-only report of 2,000 wrapper objects and a temporarily uploaded `Blob` file attachment. Which two techniques reduce the Visualforce View State size?",
+    "scenarioEn": "A legacy Visualforce page with a custom Apex controller is throwing a `Maximum view state size limit (170KB) exceeded` error when displaying a large read-only report of 2,000 wrapper objects and a temporarily uploaded `Blob` file attachment. Which two techniques reduce the Visualforce View State size? (Choose 2 answers)",
     "scenario": "一个带有自定义 Apex 控制器的遗留 Visualforce 页面在显示包含 2,000 个 Wrapper 对象的只读大型报表以及一个临时上传的 `Blob` 文件附件时，抛出了 `Maximum view state size limit (170KB) exceeded` 错误。哪两种技术可以减小 Visualforce 的视图状态（View State）体积？（选择两项）",
     "options": [
       {
@@ -858,7 +858,7 @@ export const QUESTIONS_PART_3: ExamQuestion[] = [
         "id": "A",
         "textEn": "Up to 50 jobs in a synchronous transaction, and ONLY 1 job in an asynchronous transaction (such as chaining inside Queueable.execute or Batchable.execute).",
         "text": "在同步事务中最多 **50** 个任务，而在异步事务中（如在 Queueable.execute 或 Batchable.execute 内部链式调用）**仅限 1 个**任务！",
-        "whyRightOrWrong": "正确（Correct）！这是 PD1/PD2 必考的经典配额对比题：同步上下文 `Limits.getLimitQueueableJobs()` 为 50，但一旦进入异步上下文（Batch、Queueable、Scheduled），单次事务最多只能调用 1 次 `System.enqueueJob()`（调用第 2 次会立即抛出 `System.LimitException: Too many queueable jobs added to the queue: 2`）。"
+        "whyRightOrWrong": "正确（Correct）！这是 PD1/PD2 必考的经典配额对比题：同步上下文 `Limits.getLimitQueueableJobs()` 为 50，但一旦进入异步上下文（Batch、Queueable、@future），单次事务最多只能调用 1 次 `System.enqueueJob()`（调用第 2 次会立即抛出 `System.LimitException: Too many queueable jobs added to the queue: 2`）。"
       },
       {
         "id": "B",
@@ -948,7 +948,7 @@ export const QUESTIONS_PART_3: ExamQuestion[] = [
         "id": "B",
         "textEn": "Outbound Messaging in Workflow Rules.",
         "text": "工作流规则中的出站消息（Outbound Messaging）。",
-        "whyRightOrWrong": "错误（Incorrect）：Outbound Messaging 是旧版 SOAP XML 推送，不支持内部 Async Apex Trigger，也不提供 changedFields 差异头。"
+        "whyRightOrWrong": "错误（Incorrect）：Outbound Messaging 是旧版 SOAP XML 推送，不支持内部 Async Apex Trigger，也不提供 changedFields 差异头；且 Workflow Rules 已于 2025-12-31 停止支持（新建出站消息应改用 Flow）。(Legacy SOAP push; Workflow Rules are end-of-support since Dec 31, 2025.)"
       },
       {
         "id": "C",
@@ -1068,7 +1068,7 @@ export const QUESTIONS_PART_3: ExamQuestion[] = [
         "id": "A",
         "textEn": "Insert the Case record first, then call Test.setCreatedDate(caseRecord.Id, DateTime.now().addDays(-120)).",
         "text": "先 `insert` 该 Case 记录，然后调用 `Test.setCreatedDate(caseRecord.Id, DateTime.now().addDays(-120))`。",
-        "whyRightOrWrong": "正确（Correct）！`Test.setCreatedDate(recordId, createdDatetime)` 是专门用于在单元测试中修改已插入记录 `CreatedDate` 的官方测试方法（必须在 insert 拿到 Id 后、且在 Test.startTest() 之前调用）。"
+        "whyRightOrWrong": "正确（Correct）！`Test.setCreatedDate(recordId, createdDatetime)` 是专门用于在单元测试中修改已插入记录 `CreatedDate` 的官方测试方法（必须先 insert 拿到 Id；通常在 Test.startTest() 之前完成造数）。(Official test-only method to backdate CreatedDate of a record already inserted in the test.)"
       },
       {
         "id": "B",
@@ -1122,7 +1122,7 @@ export const QUESTIONS_PART_3: ExamQuestion[] = [
         "id": "C",
         "textEn": "System.runAs() can be used in production Apex triggers to bypass user permissions.",
         "text": "`System.runAs()` 可以在生产环境的 Apex 触发器中使用以绕过用户权限。",
-        "whyRightOrWrong": "错误（Incorrect）：`System.runAs(user)` 只能在 `@IsTest` 测试方法中使用，不可用于生产业务代码（生产中仅支持针对自动化进程或 Platform Event 配置用户）。"
+        "whyRightOrWrong": "错误（Incorrect）：`System.runAs(user)` 只能在测试方法中使用，不可用于生产业务代码；生产代码要绕过或强制权限应使用 `without sharing` / `AccessLevel.SYSTEM_MODE` 或 `WITH USER_MODE` 等显式声明。(runAs is test-only.)"
       },
       {
         "id": "D",

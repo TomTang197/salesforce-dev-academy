@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import {
   Calendar,
   BookOpen,
@@ -37,11 +37,24 @@ import {
   StoryTicket,
 } from './utils/story';
 import { ElasticPlannerView } from './components/ElasticPlannerView';
-import { BridgeOnboardingView } from './components/BridgeOnboardingView';
-import { CurriculumView } from './components/CurriculumView';
-import { CodingLabView } from './components/CodingLabView';
-import { ExamSimulatorView } from './components/ExamSimulatorView';
-import { FlashcardsAndCheatSheetView } from './components/FlashcardsAndCheatSheetView';
+// Secondary views are code-split and loaded on first visit.
+const BridgeOnboardingView = lazy(() =>
+  import('./components/BridgeOnboardingView').then((m) => ({ default: m.BridgeOnboardingView }))
+);
+const CurriculumView = lazy(() => import('./components/CurriculumView').then((m) => ({ default: m.CurriculumView })));
+const CodingLabView = lazy(() => import('./components/CodingLabView').then((m) => ({ default: m.CodingLabView })));
+const ExamSimulatorView = lazy(() =>
+  import('./components/ExamSimulatorView').then((m) => ({ default: m.ExamSimulatorView }))
+);
+const FlashcardsAndCheatSheetView = lazy(() =>
+  import('./components/FlashcardsAndCheatSheetView').then((m) => ({ default: m.FlashcardsAndCheatSheetView }))
+);
+
+const ViewFallback = () => (
+  <div className="surface-card" style={{ minHeight: '240px', color: 'var(--text-muted)', fontSize: '13px' }} aria-busy="true">
+    载入中…
+  </div>
+);
 import { ShelterHomeView } from './components/story/ShelterHomeView';
 import { MoodCheckInDialog } from './components/story/MoodCheckInDialog';
 import { StoryUnlockDialog } from './components/story/StoryUnlockDialog';
@@ -644,6 +657,7 @@ export function App() {
             />
           )}
 
+          <Suspense fallback={<ViewFallback />}>
           {activeTab === 'bridge' && (
             <BridgeOnboardingView
               state={state}
@@ -707,6 +721,7 @@ export function App() {
           {activeTab === 'flashcards' && (
             <FlashcardsAndCheatSheetView state={state} onRateFlashcard={handleRateFlashcard} />
           )}
+          </Suspense>
         </main>
       </div>
 

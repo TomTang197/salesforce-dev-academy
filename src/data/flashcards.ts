@@ -86,8 +86,8 @@ export const FLASHCARDS_DATA: FlashcardItem[] = [
 5. Duplicate Rules
 6. Save to DB (Id generated, NOT committed yet)
 7. Apex after Triggers
-8. Assignment -> Auto-Response -> Workflow Rules (if Field Update occurs -> re-runs before & after Triggers 1 more time, WITHOUT re-running Custom Validation Rules!)
-9. Escalation -> Entitlement -> Roll-up Summary -> After-Save Record-Triggered Flows
+8. Assignment -> Auto-Response -> Workflow Rules (legacy: Workflow Rules reached end of support on Dec 31, 2025 — build new automation in Flow. If a legacy Field Update occurs -> re-runs before update & after update Triggers 1 more time, WITHOUT re-running Custom Validation Rules!)
+9. Escalation -> After-Save Record-Triggered Flows -> Entitlement -> Roll-up Summary (parent record goes through its own save)
 10. Commit to DB -> Post-Commit Actions (@future, Queueable, Platform Events, Emails)`,
     backAnswer: `1. 系统级校验（第1次）
 2. Before-Save Flow（记录保存前流）
@@ -96,10 +96,10 @@ export const FLASHCARDS_DATA: FlashcardItem[] = [
 5. 重复规则（Duplicate Rules）
 6. 写入数据库生成 Id（尚未 Commit）
 7. Apex after Trigger
-8. 分配规则 -> 自动响应 -> 工作流规则（若有字段更新，before 和 after Trigger 会各重跑 1 次，但不重跑自定义验证规则！）
-9. 升级规则 -> 汇总公式计算 -> After-Save Flow
+8. 分配规则 -> 自动响应 -> 工作流规则（旧版：Workflow Rules 已于 2025-12-31 终止支持，新自动化请用 Flow；若旧版字段更新触发，before update 和 after update Trigger 会各重跑 1 次，但不重跑自定义验证规则！）
+9. 升级规则 -> After-Save Flow -> 权利规则（Entitlement）-> 汇总字段（Roll-up Summary）计算
 10. 数据库事务提交（Commit）-> 提交后动作（发送邮件、异步任务、非立即型平台事件）`,
-    examTip: 'Exam Trap (考场陷阱): Before-Save Flows run BEFORE before triggers; Custom Validation Rules run AFTER before triggers; Workflow Field Updates DO NOT re-evaluate Custom Validation Rules!'
+    examTip: 'Exam Trap (考场陷阱): Before-Save Flows run BEFORE before triggers; Custom Validation Rules run AFTER before triggers; Workflow Field Updates (legacy) DO NOT re-evaluate Custom Validation Rules!'
   },
   {
     id: 'FC05',
@@ -173,15 +173,15 @@ export const FLASHCARDS_DATA: FlashcardItem[] = [
     frontPrompt: '类上声明了 `with sharing` 会自动检查字段级权限（FLS）和对象增删改查权限（CRUD）吗？如何真正强制执行 CRUD/FLS？',
     backAnswerEn: `- NO! "with sharing" ONLY enforces Record-Level Sharing (OWD, Role Hierarchy, Sharing Rules). It NEVER enforces Object CRUD or Field-Level Security (FLS).
 - To enforce CRUD + FLS + Sharing in Apex:
-  1. SOQL: Append WITH USER_MODE (recommended) or WITH SECURITY_ENFORCED.
+  1. SOQL: Append WITH USER_MODE (recommended). Legacy WITH SECURITY_ENFORCED only checks SELECT/FROM fields and can no longer be used in Apex at API v67.0+ (Summer '26) — replace it with WITH USER_MODE.
   2. DML: Use insert as user records; or Database.insert(records, allOrNone, AccessLevel.USER_MODE).
   3. Sanitize in memory: Security.stripInaccessible(AccessType.READABLE / CREATABLE / UPDATABLE, records).`,
     backAnswer: `- 不会！with sharing 仅控制【记录行级可见性（Record-Level Sharing）】，绝不会自动校验对象 CRUD 和字段 FLS。
 - 真正强制执行 CRUD/FLS 的三大现代方案：
-  1. SOQL 尾部加 WITH USER_MODE（同时执行 FLS + CRUD + Sharing）。
+  1. SOQL 尾部加 WITH USER_MODE（同时执行 FLS + CRUD + Sharing）。旧版 WITH SECURITY_ENFORCED 只检查 SELECT/FROM 字段，且自 API v67.0（Summer '26）起无法在 Apex 中使用，应改为 WITH USER_MODE。
   2. DML 使用 insert as user list; 或 AccessLevel.USER_MODE。
   3. 使用 Security.stripInaccessible(AccessType.READABLE/UPDATABLE, list) 剥离越权字段。`,
-    examTip: 'Exam Trap (考场陷阱): WITH SECURITY_ENFORCED throws an exception if a field is inaccessible, whereas Security.stripInaccessible() silently removes inaccessible fields without crashing and returns getRemovedFields()!'
+    examTip: 'Exam Trap (考场陷阱): WITH USER_MODE (and legacy WITH SECURITY_ENFORCED) throws a QueryException if a field is inaccessible, whereas Security.stripInaccessible() silently removes inaccessible fields without crashing and exposes them via getRemovedFields()! Note: at API v67.0+, classes that omit a sharing keyword default to with sharing and their SOQL/DML default to user mode.'
   },
   {
     id: 'FC10',
@@ -265,15 +265,15 @@ export const FLASHCARDS_DATA: FlashcardItem[] = [
     frontPromptEn:
       'Why use the Continuation class in LWC/Aura, what is its concurrent limit vs normal synchronous callouts, and how is the Apex method annotated?',
     frontPrompt: '为什么在 LWC 中使用 `Continuation` 类？它解决什么并发限制？Apex 方法该如何添加注解？',
-    backAnswerEn: `1. Problem Solved: Normal synchronous callouts lasting > 5 seconds count against the org-wide limit of 10 concurrent long-running requests. Continuation offloads the HTTP wait from the Apex thread (up to 120s timeout, up to 3 chained/parallel HttpRequests).
+    backAnswerEn: `1. Problem Solved: A synchronous callout from a UI request keeps the Apex server thread blocked while waiting for the external response. Continuation makes the callout asynchronous: the thread is released while the platform waits (up to 120s timeout, up to 3 parallel HttpRequests per Continuation, up to 3 chained continuations). Historically this also protected the org-wide limit of 10 concurrent long-running (>5s) requests; since Winter '20 callout wait time no longer counts toward that 5-second timer, but Continuation remains the recommended pattern for long-running callouts from LWC/Aura/Visualforce.
 2. Annotation:
    - Entry method: @AuraEnabled(continuation=true cacheable=true) returning Object (a new Continuation(timeoutSecs) instance with cont.continuationMethod = 'callbackName').
    - Callback method: static Object callbackName(List<String> labels, Object state).`,
-    backAnswer: `1. 解决痛点：普通同步请求耗时若超过 5 秒，会占用全 Org 仅有的 10 个并发长请求（Concurrent Long-Running Requests）名额。Continuation 在等待外部 HTTP 响应时释放 Apex 工作线程，不占该并发名额（单次支持最多串联/并联 3 个 HttpRequest，超时高达 120 秒）。
+    backAnswer: `1. 解决痛点：UI 发起的同步 Callout 在等待外部响应期间会一直占用 Apex 服务器线程。Continuation 将 Callout 异步化，等待外部 HTTP 响应时释放 Apex 工作线程（单个 Continuation 最多并联 3 个 HttpRequest，最多串联 3 个 Continuation，超时上限 120 秒）。历史上它也用于规避全 Org 10 个并发长请求（>5 秒）名额；自 Winter '20 起 Callout 等待时间已不再计入该 5 秒计时，但 Continuation 仍是 LWC/Aura/VF 调用耗时接口的推荐模式。
 2. 核心语法：
    - 入口方法声明 @AuraEnabled(continuation=true)，返回 new Continuation(40) 实例并指定 cont.continuationMethod 和 cont.state。
    - 回调方法通过 Continuation.getResponse(labels[0]) 获取结果并返回给 LWC。`,
-    examTip: 'Exam Trap (考场陷阱): In PD2, whenever an LWC or Visualforce page needs to make a slow callout (> 5s) without hitting the Concurrent Request Limit of 10, Continuation is the right answer!'
+    examTip: 'Exam Trap (考场陷阱): In PD2, whenever an LWC, Aura, or Visualforce page needs to make a slow/long-running callout without blocking a server thread, Continuation (@AuraEnabled(continuation=true)) is the right answer!'
   },
   {
     id: 'FC15',
@@ -325,17 +325,19 @@ export const FLASHCARDS_DATA: FlashcardItem[] = [
     frontTitleEn: 'Workflow Field Update vs Recursive Trigger Guard Trap',
     frontTitle: 'Workflow 字段更新重跑与静态布尔递归锁的大坑',
     frontPromptEn:
-      'Why does a simple "public static Boolean hasRun = false;" anti-recursion flag fail when processing 1,000 records via Data Loader (Batch Size 200)?',
-    frontPrompt: '为什么在 Trigger Handler 中使用简单的 `public static Boolean hasRun = false;` 防递归锁，在用 Data Loader 导入 1,000 条记录时会引发严重漏处理 Bug？',
+      'Why does a simple "public static Boolean hasRun = false;" anti-recursion flag fail when a single Apex DML statement inserts 1,000 records (e.g., insert of a 1,000-record list in Batch Apex or a service class)?',
+    frontPrompt: '为什么在 Trigger Handler 中使用简单的 `public static Boolean hasRun = false;` 防递归锁，在单条 Apex DML 语句一次插入 1,000 条记录时（如 Batch/Service 类中 insert 1,000 条的列表）会引发严重漏处理 Bug？',
     backAnswerEn: `- Static variables persist across the ENTIRE Apex transaction!
-- When 1,000 records are inserted in a single transaction, Salesforce chunks Trigger.new into 5 sub-batches of 200 records each.
+- When 1,000 records are inserted by one DML statement in a single transaction, Salesforce chunks Trigger.new into 5 sub-batches of 200 records each (same transaction, shared limits).
 - If chunk #1 sets hasRun = true, chunks #2, #3, #4, and #5 (the remaining 800 records!) are completely skipped!
+- Note: Data Loader / SOAP API (max 200 records per batch) and Bulk API (each 200-record chunk) run each batch/chunk in its OWN transaction, so statics reset there — the bug shows up with large single-transaction Apex DML.
 - Best Practice: Use a static Set<Id> processedRecordIds (or Map<TriggerOperation, Set<Id>>) to track specific record IDs that have already been processed.`,
     backAnswer: `- 静态变量（Static Variable）的生命周期贯穿【整个 Apex 事务】！
-- 当单次事务导入 1,000 条记录时，平台会将 Trigger.new 拆分为 5 个 200 条的子批次（Chunk）依次调用 Trigger。
+- 当单条 DML 在同一事务中插入 1,000 条记录时，平台会将 Trigger.new 拆分为 5 个 200 条的子批次（Chunk）依次调用 Trigger（同一事务、共享 Governor Limits）。
 - 如果第 1 批（前 200 条）把 hasRun 设为了 true，后面的第 2~5 批（整整 800 条记录！）会直接被跳过不执行！
+- 注意：Data Loader / SOAP API（每批最多 200 条）以及 Bulk API（每个 200 条 chunk）的每一批都是【独立事务】，静态变量会重置——该 Bug 典型出现在单事务的大批量 Apex DML 中。
 - 最佳实践：使用 private static Set<Id> processedIds = new Set<Id>(); 按记录 ID 集合（或结合 TriggerOperation）进行细粒度防重入控制。`,
-    examTip: 'Exam Trap (考场陷阱): Whenever an exam scenario says "a trigger works for 200 records in a test but only processes the first 200 out of 1,000 records during a Data Loader import", the culprit is a static Boolean recursion flag!'
+    examTip: 'Exam Trap (考场陷阱): Whenever an exam scenario says "a trigger works for 200 records in a test but only processes the first 200 out of 1,000 records inserted by a single DML statement", the culprit is a static Boolean recursion flag!'
   },
   {
     id: 'FC19',

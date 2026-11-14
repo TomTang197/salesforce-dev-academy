@@ -194,8 +194,8 @@ public class OpportunityGrouper {
   // ==================== C03: SOQL Relationships & Date Literals ====================
   {
     id: 'C03',
-    titleEn: "SOQL Relationship Queries: Parent-to-Child Subquery & Child-to-Parent Dot Notation",
-    scenarioEn: "Write a single bulkified SOQL query that retrieves Accounts along with their related Contacts subquery (Contacts) and custom Invoices subquery (Invoices__r) using WITH USER_MODE.",
+    titleEn: "SOQL Relationship Queries: Child-to-Parent Dot Notation & Date Literal Filtering of High-Value Opportunities",
+    scenarioEn: "The sales director needs all Opportunities closing THIS_YEAR with Amount > 100,000 and StageName != 'Closed Lost', including the parent Account.Name and Account.Industry via child-to-parent dot notation, sorted by Amount DESC and limited to 25 rows.",
     title: '编写多表关联 SOQL：子查父与日期字面量过滤高价值商机',
     stage: 'beginner',
     category: 'SOQL',
@@ -292,8 +292,8 @@ LIMIT 25`,
   // ==================== C04: LWC Conditional & Iterator ====================
   {
     id: 'C04',
-    titleEn: "SOQL Aggregate Queries: GROUP BY AccountId, HAVING Filter & AggregateResult Casting",
-    scenarioEn: "Use an AggregateResult SOQL query with SUM(Amount), COUNT(Id), GROUP BY AccountId, and HAVING SUM(Amount) > :minTotal to identify high-value accounts without hitting the 50,000 SOQL row limit.",
+    titleEn: "LWC Modern Template Directives: Render a Deal Leaderboard with lwc:if / lwc:else & iterator:it",
+    scenarioEn: "Write an LWC template that, when hasDeals is true, iterates deals with iterator:it (key={it.value.Id}), shows a crown badge on the first item (it.first), and renders an empty state via lwc:else. Use lwc:if / lwc:else instead of the legacy, no-longer-recommended if:true / if:false.",
     title: 'LWC 现代模板指令：使用 lwc:if 与 iterator:it 渲染商机排行榜',
     stage: 'beginner',
     category: 'LWC',
@@ -302,7 +302,7 @@ LIMIT 25`,
     scenario:
       '你需要编写一个 LWC 组件模板，当 hasDeals 为 true 时使用 iterator:it 遍历 deals 数组；在第一项（it.first）展示皇冠标记，在每一项绑定唯一的 key={it.value.Id}，当没有数据时通过 lwc:else 显示空状态提示。',
     taskRequirements: [
-      '使用现代条件指令 lwc:if={hasDeals} 和 lwc:else（严禁使用已废弃的 if:true / if:false）',
+      '使用现代条件指令 lwc:if={hasDeals} 和 lwc:else（严禁使用已不推荐、未来可能被移除的旧版 if:true / if:false）',
       '使用 iterator:it={deals} 遍历列表，并在外层节点绑定 key={it.value.Id}',
       '在循环内部使用 lwc:if={it.first} 标记榜首第一项',
     ],
@@ -382,8 +382,8 @@ LIMIT 25`,
   // ==================== C05: Before Update Trigger & addError ====================
   {
     id: 'C05',
-    titleEn: "Before Trigger Validation & Defaulting: Prevent High-Value Opportunity Deletion & Auto-Fill CloseDate",
-    scenarioEn: "Implement an Opportunity Trigger Handler that sets default CloseDate in before insert without extra DML, and blocks deleting Closed Won opportunities over $100,000 in before delete using record.addError().",
+    titleEn: "Before Update Trigger Validation & Defaulting: Block Closed Won Stage Regression & Auto-Fill CloseDate",
+    scenarioEn: "In a before update Opportunity handler, compare Trigger.oldMap with the new records: if the old StageName was 'Closed Won' and the new one is different, block the save with addError(); if the new StageName is 'Closed Won' and CloseDate is null, set CloseDate = Date.today() directly (no extra DML).",
     title: 'Before Trigger 状态防回退校验与自动字段填充',
     stage: 'intermediate',
     category: 'Apex',
@@ -468,15 +468,15 @@ LIMIT 25`,
   // ==================== C06: Recursion-Safe Trigger Handler ====================
   {
     id: 'C06',
-    titleEn: "After Update Trigger & Set<Id> Recursion Guard: Auto-Create Follow-Up Tasks on Stage Change",
-    scenarioEn: "Detect when an Opportunity transitions to Closed Won by comparing Trigger.oldMap and Trigger.new, guard against multi-chunk recursion using a static Set<Id> processedIds, and bulk-insert follow-up Tasks.",
+    titleEn: "After Update Trigger & Set<Id> Recursion Guard: Auto-Create Follow-Up Tasks When Case Priority Becomes High",
+    scenarioEn: "Detect when a Case's Priority first changes to 'High' by comparing Trigger.oldMap and Trigger.new in after update, guard against re-entry (e.g., a legacy workflow field update or a Flow updating the same record) and multi-chunk processing with a static Set<Id> processedCaseIds instead of a static Boolean, and bulk-insert follow-up Tasks outside the loop.",
     title: '防递归与 >200 条分块安全的 Trigger Handler 设计',
     stage: 'intermediate',
     category: 'Apex',
     domain: 'Trigger 与执行顺序 (Triggers & Order of Execution)',
     estimatedMinutes: 25,
     scenario:
-      '当 Case 的 Priority 首次升级为 "High" 时，需要在 After Update 中自动创建一条关联的跟进 Task。为防止工作流二次触发导致无限递归（或 Data Loader 导入 500 条记录分 3 批执行时被简单的 boolean 锁误杀），请使用 static Set<Id> processedIds 实现精准防递归。',
+      '当 Case 的 Priority 首次升级为 "High" 时，需要在 After Update 中自动创建一条关联的跟进 Task。为防止旧版工作流字段更新或 Flow 更新同一记录导致 Trigger 重入（或单条 Apex DML 写入 500 条记录、Trigger 按 200/200/100 分 3 个 chunk 在同一事务内执行时被简单的 boolean 锁误杀），请使用 static Set<Id> processedIds 实现精准防递归。',
     taskRequirements: [
       '声明 private static Set<Id> processedCaseIds = new Set<Id>()',
       '仅当 c.Priority == \'High\' 且 oldCase.Priority != \'High\' 且 !processedCaseIds.contains(c.Id) 时处理',
@@ -567,8 +567,8 @@ LIMIT 25`,
   // ==================== C07: Aggregate SOQL & Rollup ====================
   {
     id: 'C07',
-    titleEn: "LWC Reactive Data Table: @wire with Reactive \"$searchKey\" & Client-Side Filtering",
-    scenarioEn: "Build an LWC controller that uses @wire(searchAccounts, { searchKey: \"$searchKey\" }) to reactively load data and renders a lightning-datatable with search input.",
+    titleEn: "SOQL Aggregate Queries: Roll Up Lookup Relationships with GROUP BY & AggregateResult",
+    scenarioEn: "Standard Roll-Up Summary fields only work on Master-Detail relationships. Project__c looks up to Account, so write a GROUP BY Account__c aggregate query that returns SUM(Budget__c) totalBudget and COUNT(Id) projectCount of Active projects per Account, then read the values with (Decimal) ar.get('totalBudget').",
     title: '使用 AggregateResult 聚合查询实现 Lookup 关系汇总统计',
     stage: 'intermediate',
     category: 'SOQL',
@@ -649,7 +649,7 @@ LIMIT 25`,
         explanation: 'AggregateResult.get() 返回 Object 类型，必须显式向下转型为对应的 Decimal、Integer 或 Id。',
       },
     ],
-    governorLimitImpact: '将原本需拉取数千行的子表查询压缩为几行 AggregateResult，大幅降低 Heap 内存占用。',
+    governorLimitImpact: '将原本需拉取数千行的子表查询压缩为几行 AggregateResult，大幅降低 Heap 内存与 CPU 占用。注意：SUM/MAX/MIN/AVG 聚合的每一条源记录仍计入 50,000 行 SOQL 查询行数上限（仅 COUNT() 按 1 行 / 每个分组 1 行计）。',
     mockOutputPreview: {
       type: 'table',
       columns: ['Account__c', 'projectCount (COUNT)', 'totalBudget (SUM)'],
@@ -663,8 +663,8 @@ LIMIT 25`,
   // ==================== C08: Database.insert Partial Success ====================
   {
     id: 'C08',
-    titleEn: "LWC Child-to-Parent Communication: Dispatching CustomEvent & Refreshing Wire Cache via refreshApex",
-    scenarioEn: "Implement child-to-parent communication using this.dispatchEvent(new CustomEvent(\"statuschange\", { detail })) and refresh the parent @wire cache using refreshApex(this.wiredResult).",
+    titleEn: "Database.insert(list, false): Partial Success DML & Error Collection",
+    scenarioEn: "An external ERP syncs a batch of Contacts into Salesforce. A few records may fail (invalid email, missing required field) but must not block the valid ones. Use Database.insert(contacts, false), iterate the List<Database.SaveResult>, and collect every err.getMessage() from sr.getErrors() for failed rows.",
     title: 'Database.insert(list, false) 部分成功容错与错误收集',
     stage: 'intermediate',
     category: 'Apex',
@@ -746,8 +746,8 @@ LIMIT 25`,
   // ==================== C09: LWC CustomEvent Child-to-Parent ====================
   {
     id: 'C09',
-    titleEn: "Queueable Apex & Job Chaining: Async Account Tier Calculation with sObject Payload",
-    scenarioEn: "Implement the Queueable interface to process a List<Account> asynchronously, update their Tier__c field, and chain a follow-up Queueable job when not running inside a test.",
+    titleEn: "LWC Child-to-Parent Communication: Dispatch a CustomEvent with a detail Payload",
+    scenarioEn: "In the c-deal-card child component, the \"Mark Won\" button must NOT mutate the @api deal property. Instead, dispatch a CustomEvent named 'dealwon' whose detail carries { dealId, amount } so the parent (listening with ondealwon) can update its own state.",
     title: 'LWC 子传父通信：使用 CustomEvent 与 detail 载荷通知父组件',
     stage: 'intermediate',
     category: 'LWC',
@@ -828,8 +828,8 @@ export default class DealCard extends LightningElement {
   // ==================== C10: LWC @wire & refreshApex ====================
   {
     id: 'C10',
-    titleEn: "Batch Apex & Database.Stateful: Process Millions of Stale Opportunities & Summarize Totals",
-    scenarioEn: "Implement Database.Batchable<SObject> and Database.Stateful to query up to 50 million records via Database.getQueryLocator, accumulate total revenue across chunks, and send a summary in finish().",
+    titleEn: "LWC @wire with Reactive '$recordId' & Cache Refresh via refreshApex",
+    scenarioEn: "On an Account record page, use @wire(getContactsByAccount, { accountId: '$recordId' }) to reactively load related Contacts, store the complete provisioned wire result, and call refreshApex(this.wiredContactsResult) after a refresh click or a new Contact is created.",
     title: 'LWC @wire 响应式绑定 $recordId 与 refreshApex 缓存刷新',
     stage: 'intermediate',
     category: 'LWC',
@@ -919,10 +919,10 @@ export default class AccountContactManager extends LightningElement {
       },
       {
         lineOrBlock: 'this.wiredContactsResult = result;',
-        explanation: 'refreshApex 必须接收 @wire 注入的完整 provisioned object，若只传入解构后的 result.data 将无法刷新服务端缓存。',
+        explanation: 'refreshApex 必须接收 @wire 注入的完整 provisioned object，若只传入解构后的 result.data 将无法刷新该 @wire 的客户端缓存（也不会重新调用 Apex）。',
       },
     ],
-    governorLimitImpact: '利用客户端 Lightning Data Service 缓存，大幅减少重复 Apex 调用次数。',
+    governorLimitImpact: '利用 cacheable=true Apex 方法的客户端缓存，大幅减少重复 Apex 调用次数；仅在需要时通过 refreshApex 重新取数。',
     mockOutputPreview: {
       type: 'lwc-preview',
       componentSummary: '@wire 响应式监听已激活：$recordId 变更及 refreshApex(this.wiredContactsResult) 缓存重验证通过。',
@@ -932,8 +932,8 @@ export default class AccountContactManager extends LightningElement {
   // ==================== C11: Stateful Batch Apex ====================
   {
     id: 'C11',
-    titleEn: "REST Callout with Named Credentials & HttpCalloutMock Unit Test",
-    scenarioEn: "Make a secure outbound HTTP GET callout using a Named Credential endpoint (\"callout:ERP_Inventory_API/...\") and deserialize the JSON response without hardcoding credentials.",
+    titleEn: "Stateful Batch Apex: Database.Batchable + Database.Stateful Across Chunks",
+    scenarioEn: "Archive about 2 million dormant Account records with Batch Apex and print the total number processed in finish(). Implement Database.Batchable<sObject> and Database.Stateful, return Database.getQueryLocator(...) from start() (up to 50 million rows), and accumulate recordsProcessed in execute().",
     title: '编写跨批次保留状态的 Batch Apex (Database.Batchable + Database.Stateful)',
     stage: 'advanced',
     category: 'Apex',
@@ -973,7 +973,7 @@ public inherited sharing class ArchiveInactiveAccountsBatch {
       },
       {
         id: 'r2',
-        label: '使用 Database.getQueryLocator 突破 5000 万行上限',
+        label: '使用 Database.getQueryLocator 突破 5 万行 SOQL 上限（最高 5000 万行）',
         description: '调用 Database.getQueryLocator',
         mustMatch: ['Database\\.getQueryLocator'],
       },
@@ -1031,15 +1031,15 @@ public inherited sharing class ArchiveInactiveAccountsBatch {
   // ==================== C12: Security WITH USER_MODE & stripInaccessible ====================
   {
     id: 'C12',
-    titleEn: "Security & Apex Unit Testing: WITH USER_MODE, Security.stripInaccessible & 100% Coverage Test",
-    scenarioEn: "Enforce CRUD and Field-Level Security (FLS) using Security.stripInaccessible(AccessType.UPDATABLE, records) and write an @IsTest method using @TestSetup, System.runAs(), and Test.startTest()/stopTest().",
+    titleEn: "Apex Data Security: WITH USER_MODE & Security.stripInaccessible",
+    scenarioEn: "A security review found that your LWC Apex controller queries and updates Opportunities in system mode. Add WITH USER_MODE to the SOQL query to enforce CRUD, FLS, and sharing, and call Security.stripInaccessible(AccessType.UPDATABLE, opps) before saving so fields the user cannot edit are stripped. (Classes on API v66.0 and earlier default to system mode; at v67.0+ SOQL/DML default to user mode, but explicit USER_MODE remains best practice.)",
     title: '使用 WITH USER_MODE 与 Security.stripInaccessible 加固数据安全',
     stage: 'advanced',
     category: 'Apex',
     domain: '安全模型与单元测试 (Security & Testing)',
     estimatedMinutes: 20,
     scenario:
-      '安全审计团队发现你的 LWC 后端控制器在查询与更新 Opportunity 时运行在默认的 System Mode 下，存在越权访问与修改未授权字段的漏洞。请使用 WITH USER_MODE 查询，并在更新前使用 Security.stripInaccessible(AccessType.UPDATABLE, ...) 剥离用户无权修改的字段。',
+      '安全审计团队发现你的 LWC 后端控制器在查询与更新 Opportunity 时运行在默认的 System Mode 下，存在越权访问与修改未授权字段的漏洞（API v66.0 及更早版本的类中 SOQL/DML 默认 System Mode；v67.0+ 默认 user mode，但显式声明仍是最佳实践）。请使用 WITH USER_MODE 查询，并在更新前使用 Security.stripInaccessible(AccessType.UPDATABLE, ...) 剥离用户无权修改的字段。',
     taskRequirements: [
       '在 SOQL 查询末尾添加 WITH USER_MODE 强制执行 CRUD、FLS 和 Sharing',
       '在保存更新前调用 Security.stripInaccessible(AccessType.UPDATABLE, opps)',
@@ -1065,7 +1065,7 @@ public inherited sharing class ArchiveInactiveAccountsBatch {
     }
 }`,
     hints: [
-      '在 LIMIT 20 之后加上 WITH USER_MODE',
+      '在 FROM Opportunity 之后、ORDER BY 之前加上 WITH USER_MODE（WITH 子句必须位于 ORDER BY / LIMIT 之前）',
       '调用脱敏方法：SObjectAccessDecision decision = Security.stripInaccessible(AccessType.UPDATABLE, opps);',
       '更新安全列表：update decision.getRecords();',
     ],
@@ -1120,7 +1120,7 @@ public inherited sharing class ArchiveInactiveAccountsBatch {
         explanation: '当客户端传入的 JSON 包含只读或无权限字段时，自动静默剥离这些非法字段而不让整个保存操作崩溃，是 AppExchange 安全审查的首选方案。',
       },
     ],
-    governorLimitImpact: '原生 C++ 层安全过滤，零额外 SOQL 消耗。',
+    governorLimitImpact: '平台原生安全检查，零额外 SOQL 消耗；update as user 仍计 1 次 DML。',
     mockOutputPreview: {
       type: 'logs',
       logs: [
@@ -1134,15 +1134,15 @@ public inherited sharing class ArchiveInactiveAccountsBatch {
   // ==================== C13: Apex Unit Testing (@TestSetup & startTest/stopTest) ====================
   {
     id: 'C13',
-    titleEn: "Platform Events Publish & Subscribe: Publish Order_Event__e & Bulk Subscribe in After Insert Trigger",
-    scenarioEn: "Publish high-volume Platform Events via EventBus.publish() and write a bulkified after insert trigger on Order_Event__e that handles EventBus.RetryableException.",
+    titleEn: "Apex Unit Testing: @TestSetup, Test.startTest()/stopTest() & the Assert Class",
+    scenarioEn: "Write a production-grade test class for the async AccountRatingQueueable service: create data in @TestSetup, wrap System.enqueueJob(...) in Test.startTest()/Test.stopTest() so the Queueable completes synchronously, then query and verify the result with Assert.areEqual (preferred over the older System.assertEquals, which still works).",
     title: '编写标准 Apex 单元测试：@TestSetup、startTest/stopTest 与 Assert',
     stage: 'advanced',
     category: 'Apex',
     domain: '安全模型与单元测试 (Security & Testing)',
     estimatedMinutes: 25,
     scenario:
-      '请为异步客户评级服务 AccountRatingQueueable 编写符合生产规范的单元测试类。要求使用 @TestSetup 准备测试数据，使用 Test.startTest() 和 Test.stopTest() 强制异步 Queueable 任务同步执行完成，并使用 Assert.areEqual 検証更新结果。',
+      '请为异步客户评级服务 AccountRatingQueueable 编写符合生产规范的单元测试类。要求使用 @TestSetup 准备测试数据，使用 Test.startTest() 和 Test.stopTest() 强制异步 Queueable 任务同步执行完成，并使用 Assert.areEqual 验证更新结果。',
     taskRequirements: [
       '使用 @TestSetup 创建并 insert 测试 Account 记录',
       '在测试方法中调用 Test.startTest()、System.enqueueJob(...) 和 Test.stopTest()',
@@ -1237,15 +1237,15 @@ private class AccountRatingQueueableTest {
   // ==================== C14: Platform Events & Named Credentials ====================
   {
     id: 'C14',
-    titleEn: "Lightning Message Service (LMS): Cross-DOM Sibling Component Pub/Sub Communication",
-    scenarioEn: "Use @wire(MessageContext), subscribe(), publish(), and unsubscribe() from lightning/messageService to synchronize selected Account records between unrelated LWC components on a Lightning page.",
+    titleEn: "Named Credential Callout & Publish Immediately Platform Event Error Logging",
+    scenarioEn: "When an order is paid, POST to an external gateway through a Named Credential (callout:Stripe_Gateway/v1/charges) instead of hard-coding URLs and secrets. On failure, publish an Error_Log__e platform event via EventBus.publish in the catch block; with the event configured as Publish Immediately, the log survives even though the rethrown exception rolls back the transaction.",
     title: '使用 Named Credential 发起 Callout 与发布 Platform Event',
     stage: 'advanced',
     category: 'Apex',
     domain: '异步 Apex 与集成架构 (Async Apex & Integration)',
     estimatedMinutes: 25,
     scenario:
-      '当订单支付成功时，需要通过 Named Credential (callout:Stripe_Gateway/v1/charges) 发起外部 POST 请求（避免硬编码 URL 和密钥），并在遇到异常时通过 EventBus.publish 发布一条 Error_Log__e 平台事件确保错误日志不随事务回滚丢失。',
+      '当订单支付成功时，需要通过 Named Credential (callout:Stripe_Gateway/v1/charges) 发起外部 POST 请求（避免硬编码 URL 和密钥），并在遇到异常时通过 EventBus.publish 发布一条 Error_Log__e 平台事件确保错误日志不随事务回滚丢失（Error_Log__e 需配置为 Publish Immediately；默认的 Publish After Commit 会随回滚丢弃）。',
     taskRequirements: [
       '使用 req.setEndpoint(\'callout:Stripe_Gateway/v1/charges\') 配置 Named Credential 终点',
       '在 catch 块中创建 Error_Log__e 实例并调用 EventBus.publish(...) 发布事件',
@@ -1312,7 +1312,7 @@ private class AccountRatingQueueableTest {
         explanation: '配置为 Publish Immediately 的平台事件不会随后续 throw e 导致的数据库事务回滚而丢失，是持久化异常审计日志的标准架构模式。',
       },
     ],
-    governorLimitImpact: '消耗 1 次 Callout (上限 100) 与 1 次 EventBus 发布。',
+    governorLimitImpact: '消耗 1 次 Callout（上限 100）；EventBus.publish 计入 1 次 DML 语句配额（上限 150）。',
     mockOutputPreview: {
       type: 'logs',
       logs: [
@@ -1325,8 +1325,8 @@ private class AccountRatingQueueableTest {
   // ==================== C15: Selective SOQL & FOR UPDATE (Architect) ====================
   {
     id: 'C15',
-    titleEn: "Enterprise Trigger Handler & Unit of Work: Bulk Savepoint, Partial DML & Error Logging",
-    scenarioEn: "Combine Database.setSavepoint(), Database.update(records, false) partial commit, and Database.SaveResult inspection to record granular field errors without losing valid updates.",
+    titleEn: "Large Data Volume (LDV) Tuning: Rewrite a Selective SOQL Query with a FOR UPDATE Row Lock",
+    scenarioEn: "An org with ~8 million Cases hits non-selective query timeouts and concurrent update conflicts. Rewrite the anti-pattern query (Status != 'Closed', LIKE '%VIP%') to filter on the indexed foreign key AccountId IN :accountIds and a positive Status IN :openStatuses set, and add FOR UPDATE to pessimistically lock the selected rows.",
     title: '海量数据 (LDV) 调优：改写高选择性 SOQL 并添加 FOR UPDATE 行锁',
     stage: 'architect',
     category: 'SOQL',
@@ -1403,8 +1403,8 @@ FOR UPDATE`,
   // ==================== C16: LWC Jest Unit Testing ====================
   {
     id: 'C16',
-    titleEn: "LWC Jest Unit Testing: Mocking @wire Adapter & Asserting Shadow DOM Re-render",
-    scenarioEn: "Write an LWC Jest test using createElement, emit mock data via a wire adapter, wait for the microtask queue with Promise.resolve(), and assert the rendered Shadow DOM elements.",
+    titleEn: "LWC Jest Unit Testing: Shadow DOM Queries & Asserting Re-render After a Microtask",
+    scenarioEn: "Complete the Jest test for c-status-banner: mount it with createElement, click the button inside its shadow DOM, await Promise.resolve() so the reactive re-render finishes, then assert that .status-text reads 'Approved'.",
     title: 'LWC Jest 单元测试：Shadow DOM 查询与微任务异步断言',
     stage: 'architect',
     category: 'LWC',

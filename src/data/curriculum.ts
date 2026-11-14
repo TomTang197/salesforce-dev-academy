@@ -43,7 +43,7 @@ export const CURRICULUM_LESSONS: CurriculumLesson[] = [
       {
         heading: '1. Core Per-Transaction Governor Limits / 必须死记硬背的配额数字 (PD1 High-Yield)',
         content:
-          'Synchronous (同步事务) vs. Asynchronous (异步事务 - Batch / Queueable / Future) 配额对照：\n• Total number of SOQL queries issued (SOQL 查询次数上限)：Sync 100 / Async 200\n• Total number of records retrieved by SOQL queries (单事务 SOQL 返回总行数)：50,000 rows (Aggregate queries count toward this limit!)\n• Total number of DML statements issued (DML 语句调用次数上限)：150 statements (Sync & Async)\n• Total number of records processed as a result of DML statements (单事务 DML 处理总记录数)：10,000 rows\n• Total number of SOSL queries issued (SOSL 搜索调用上限)：20 queries (up to 2,000 records per search)\n• Maximum CPU time on the Salesforce servers (CPU 时间上限)：Sync 10,000 ms (10s) / Async 60,000 ms (60s)\n• Total heap size (Heap 堆内存上限)：Sync 6 MB / Async 12 MB\n• Total number of callouts (HTTP Requests or Web Services calls)：100 callouts per transaction (max cumulative timeout 120 seconds)',
+          'Synchronous (同步事务) vs. Asynchronous (异步事务 - Batch / Queueable / Future) 配额对照：\n• Total number of SOQL queries issued (SOQL 查询次数上限)：Sync 100 / Async 200\n• Total number of records retrieved by SOQL queries (单事务 SOQL 返回总行数)：50,000 rows (SUM/AVG/MIN/MAX count every aggregated row toward this limit; COUNT()/COUNT(field) counts as 1 row, or 1 row per GROUP BY group)\n• Total number of DML statements issued (DML 语句调用次数上限)：150 statements (Sync & Async)\n• Total number of records processed as a result of DML statements (单事务 DML 处理总记录数)：10,000 rows\n• Total number of SOSL queries issued (SOSL 搜索调用上限)：20 queries (up to 2,000 records per search)\n• Maximum CPU time on the Salesforce servers (CPU 时间上限)：Sync 10,000 ms (10s) / Async 60,000 ms (60s)\n• Total heap size (Heap 堆内存上限)：Sync 6 MB / Async 12 MB\n• Total number of callouts (HTTP Requests or Web Services calls)：100 callouts per transaction (max cumulative timeout 120 seconds)',
         language: 'apex',
         codeSnippet: `// Monitor remaining Governor Limits dynamically at runtime using the Limits class
 System.debug('SOQL Queries used: ' + Limits.getQueries() + ' / ' + Limits.getLimitQueries());
@@ -164,10 +164,11 @@ List<Account> accList = accMap.values();`,
     ],
     codeComparison: {
       title: 'Omitted Sharing Declaration Risk vs. Explicit inherited sharing (省略共享声明的风险 vs 显式声明)',
-      antiPatternLabel: '❌ Anti-Pattern (反模式): Omitting sharing keyword (Defaults to without sharing at entry point)',
+      antiPatternLabel: '❌ Anti-Pattern (反模式): Omitting sharing keyword (API v66.0 and earlier: runs without sharing at entry point)',
       antiPatternCode: `public class AccountHelper {
-    // When a class omits any sharing keyword, it runs as 'without sharing' by default!
-    // Exposes all records in the org if called from an LWC component.
+    // API v66.0 and earlier: a class that omits any sharing keyword inherits the caller's mode,
+    // and runs as 'without sharing' when it is the entry point (e.g. called from an LWC component).
+    // (API v67.0+ secure-by-default: an omitted keyword defaults to 'with sharing' - still declare it explicitly!)
     public static List<Account> fetchAll() {
         return [SELECT Id, Name FROM Account];
     }
@@ -183,7 +184,7 @@ List<Account> accList = accMap.values();`,
         'Critical Exam Rule: **Inner classes DO NOT inherit the sharing setting from their container (outer) class!** Every inner class must explicitly declare its own sharing keyword.',
     },
     examTraps: [
-      'Exam Trap 1 (内部类陷阱): Inner classes NEVER inherit the sharing setting from their enclosing outer class. They default to `without sharing` if omitted!',
+      'Exam Trap 1 (内部类陷阱): Inner classes NEVER inherit the sharing setting from their enclosing outer class. If omitted, the classic rule applies (API v66.0 and earlier: inherits the caller, `without sharing` as an entry point; API v67.0+: defaults to `with sharing`) — always declare it explicitly!',
       'Exam Trap 2 (跨类调用): If Class A (`with sharing`) calls a method in Class B (`without sharing`), the code inside Class B executes under Class B\'s declaration (`without sharing`).',
       'Exam Trap 3 (权限边界): `with sharing` ONLY enforces record-level sharing (which rows you see), NOT Object CRUD or Field-Level Security (FLS). Use `WITH USER_MODE` or `Security.stripInaccessible` for CRUD/FLS.',
     ],
@@ -324,7 +325,7 @@ List<Contact> matchedContacts = (List<Contact>) searchList[1];`,
       {
         heading: '1. Modern Conditional Rendering: lwc:if / lwc:elseif / lwc:else',
         content:
-          'Salesforce has officially deprecated legacy `if:true` and `if:false` in favor of **`lwc:if`**, **`lwc:elseif`**, and **`lwc:else`**. Remember: **LWC templates DO NOT allow inline JavaScript expressions** (writing `lwc:if={count > 0}` causes a compile error). You must compute boolean values inside a JavaScript **`get` getter property**!',
+          'Salesforce no longer recommends legacy `if:true` and `if:false` (they may be deprecated and removed in a future release) in favor of **`lwc:if`**, **`lwc:elseif`**, and **`lwc:else`**. Remember: **LWC templates DO NOT allow inline JavaScript expressions** (writing `lwc:if={count > 0}` causes a compile error). You must compute boolean values inside a JavaScript **`get` getter property**!',
         language: 'html',
         codeSnippet: `<template>
     <template lwc:if={isPremiumAccount}>
@@ -491,7 +492,7 @@ export default class AccountList extends LightningElement {
       {
         heading: '3. Salesforce Save Order of Execution (20步核心顺序必背)',
         content:
-          '1. Load original record → 2. System Validation (required fields on page layout, field formats, max length)\n3. **Record-Triggered Flows (Before-Save / Fast Field Updates)**\n4. **All `before` Triggers**\n5. System Validation again + **Custom Validation Rules (自定义校验规则)** 👈 Notice: `before` triggers run BEFORE Custom Validation Rules!\n6. Duplicate Rules (重复规则)\n7. Save record to database (**Record `Id` is generated**, but NOT committed yet)\n8. **All `after` Triggers**\n9. Assignment Rules → 10. Auto-Response Rules → 11. Workflow Rules (Field updates re-run `before` & `after` triggers 1 more time!)\n12. Escalation Rules → 13. **Record-Triggered Flows (After-Save / Actions & Related Records)**\n14. Entitlement Rules → 15. **Roll-Up Summary Fields calculation on Parent (triggers full parent save procedure!)**\n16. Criteria-Based Sharing → 17. **Commit all DML operations to database**\n18. **Post-Commit Logic**: Send Email Alerts, enqueue `@future` / `Queueable` jobs, send Outbound Messages.',
+          '1. Load original record → 2. System Validation (required fields on page layout, field formats, max length)\n3. **Record-Triggered Flows (Before-Save / Fast Field Updates)**\n4. **All `before` Triggers**\n5. System Validation again + **Custom Validation Rules (自定义校验规则)** 👈 Notice: `before` triggers run BEFORE Custom Validation Rules!\n6. Duplicate Rules (重复规则)\n7. Save record to database (**Record `Id` is generated**, but NOT committed yet)\n8. **All `after` Triggers**\n9. Assignment Rules → 10. Auto-Response Rules → 11. Workflow Rules (legacy — Workflow Rules & Process Builder reached end of support on Dec 31, 2025; new automation should use Flow. Legacy field updates re-run `before` & `after` update triggers 1 more time!)\n12. Escalation Rules → 13. **Record-Triggered Flows (After-Save / Actions & Related Records)**\n14. Entitlement Rules → 15. **Roll-Up Summary Fields calculation on Parent (triggers full parent save procedure!)**\n16. Criteria-Based Sharing → 17. **Commit all DML operations to database**\n18. **Post-Commit Logic**: Send Email Alerts, enqueue `@future` / `Queueable` jobs, send Outbound Messages.',
       },
     ],
     codeComparison: {
@@ -554,7 +555,7 @@ export default class AccountList extends LightningElement {
       {
         termEn: 'Static Set<Id> Recursion Guard vs. Static Boolean Trap',
         meaningZh: '使用 static Set<Id> 精确防递归，避免 static Boolean 在 >200 条分批时跳过后续批次',
-        examSignalPhraseEn: '"A static boolean flag causes records 201–1000 to be skipped during bulk Data Loader updates -> Replace with static Set<Id>."',
+        examSignalPhraseEn: '"A static boolean flag causes records 201–1000 to be skipped when a single Apex DML statement updates 1,000 records -> Replace with static Set<Id>."',
       },
     ],
     coreConcepts: [
@@ -586,7 +587,7 @@ export default class AccountList extends LightningElement {
       {
         heading: '2. Why a Static Boolean Flag Breaks on >200 Records (PD2 High-Yield)',
         content:
-          'Suppose Data Loader updates **500 records** in a single transaction. Salesforce splits them into **3 chunks of 200, 200, and 100 records**, invoking your Trigger 3 times within the **same transaction**.\nIf Chunk 1 (records 1–200) sets `public static Boolean hasRun = true;`, then Chunk 2 (201–400) and Chunk 3 (401–500) see `hasRun == true` and **exit immediately without processing**! Always track processed IDs using `private static Set<Id> processedIds = new Set<Id>();` combined with checking if the field value actually changed (`newVal != oldVal`).',
+          'Suppose a single Apex DML statement (e.g., `update caseList;`) updates **500 records** in one transaction. Salesforce splits them into **3 chunks of 200, 200, and 100 records**, invoking your Trigger 3 times within the **same transaction**. (Note: external loads differ — each SOAP API / Data Loader batch of up to 200 records, and each Bulk API 200-record chunk, runs in its own transaction.)\nIf Chunk 1 (records 1–200) sets `public static Boolean hasRun = true;`, then Chunk 2 (201–400) and Chunk 3 (401–500) see `hasRun == true` and **exit immediately without processing**! Always track processed IDs using `private static Set<Id> processedIds = new Set<Id>();` combined with checking if the field value actually changed (`newVal != oldVal`).',
       },
     ],
     codeComparison: {
@@ -626,7 +627,7 @@ export default class AccountList extends LightningElement {
     },
     examTraps: [
       'Exam Trap 1: Maximum trigger recursion depth is 16 (`System.TriggerException: Maximum trigger depth exceeded`).',
-      'Exam Trap 2: If an integration inserts 1,000 records in one call, the trigger executes 5 times (200 records each), and all 5 executions share the SAME transaction Governor Limits (100 SOQL total, not 500)!',
+      'Exam Trap 2: If Apex code inserts 1,000 records with a single DML statement, the trigger executes 5 times (200 records each), and all 5 executions share the SAME transaction Governor Limits (100 SOQL total, not 500)!',
     ],
     linkedChallengeId: 'C06',
     linkedQuestionIds: ['Q17', 'Q18'],
@@ -661,8 +662,8 @@ export default class AccountList extends LightningElement {
       },
       {
         termEn: 'Aggregate Query Row Counting Rule',
-        meaningZh: '聚合查询所扫描统计的每一行底层记录都会计入 50,000 行 SOQL Query Rows 配额',
-        examSignalPhraseEn: '"Queries that include aggregate functions are still subject to the 50,000 total query rows governor limit based on the number of rows scanned."',
+        meaningZh: 'SUM/AVG/MIN/MAX 聚合所扫描的每一行底层记录都计入 50,000 行 SOQL Query Rows 配额；COUNT()/COUNT(field) 只计 1 行（有 GROUP BY 时每组计 1 行）',
+        examSignalPhraseEn: '"All aggregate functions other than COUNT() or COUNT(fieldname) include each row used by the aggregation as a query row; COUNT queries consume one query row, or one row per grouping with GROUP BY."',
       },
     ],
     coreConcepts: [
@@ -727,7 +728,7 @@ for (List<Contact> contactBatch : [
         'Whenever an exam scenario mentions `Apex heap size too large` on a large query, the answer is to refactor into a **SOQL For Loop**.',
     },
     examTraps: [
-      'Exam Trap 1: If `Opportunity` has 40,000 records across 5 stages, `SELECT StageName, COUNT(Id) FROM Opportunity GROUP BY StageName` returns 5 `AggregateResult` rows, but consumes **40,000 query rows** against the 50,000 limit!',
+      'Exam Trap 1: If `Opportunity` has 40,000 records across 5 stages, `SELECT StageName, SUM(Amount) FROM Opportunity GROUP BY StageName` returns 5 `AggregateResult` rows, but consumes **40,000 query rows** against the 50,000 limit! (Exception: `COUNT()`/`COUNT(Id)` with `GROUP BY StageName` consumes only 5 query rows — 1 per group.)',
       'Exam Trap 2: Unaliased aggregate expressions in `AggregateResult` are accessed via `ar.get(\'expr0\')`, `ar.get(\'expr1\')`.',
     ],
     linkedChallengeId: 'C07',
@@ -739,7 +740,7 @@ for (List<Contact> contactBatch : [
     daySuggested: 8,
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Developer Fundamentals (27%)',
+    examDomain: 'Process Automation & Logic (28%)',
     title: 'DML 事务控制、Database 部分成功机制与 Mixed DML 破局',
     titleEn: 'DML Transaction Control, Database Partial Success & Mixed DML Operations',
     subtitle: '对比 insert vs Database.insert(list, false)，掌握 Savepoint 回滚与 Setup 对象隔离',
@@ -1088,7 +1089,7 @@ handleRefresh() {
       {
         heading: '1. Four Pillars of Asynchronous Apex Comparison (四大异步机制对比)',
         content:
-          '1. **`@future` Methods**：\n   - Must be `static void`, annotated with `@future` (or `@future(callout=true)`).\n   - **Parameter Restriction**: ONLY accepts **primitive data types or collections of primitives** (`Set<Id>`, `List<String>`). **Cannot accept `sObject` parameters** because the sObject data might change in the database while the future method is waiting in the queue!\n   - Cannot call another `@future` method; does NOT return a Job ID.\n2. **`Queueable` Apex (`implements Queueable, Database.AllowsCallouts`)**：\n   - Accepts **`sObject` lists and custom Apex objects** via constructor!\n   - `Id jobId = System.enqueueJob(new MyJob());` returns an `AsyncApexJob` ID.\n   - Supports **Job Chaining** (calling `System.enqueueJob` inside `execute()`) and **`System.Finalizer`** (`System.attachFinalizer`) to recover from unhandled `LimitException` errors!\n3. **`Batch` Apex (`implements Database.Batchable<sObject>, Database.Stateful`)**：\n   - `Database.getQueryLocator([SELECT ...])` in `start()` retrieves up to **50,000,000 (50 Million) records**! (Note: using `Iterable` is still capped at 50,000 rows).\n   - Each `execute()` chunk (default 200 records, max 2,000) gets its own fresh Governor Limits.\n   - Implementing **`Database.Stateful`** preserves instance member variables across `execute()` chunks so `finish()` can send summary emails (`static` variables are ALWAYS reset between batch transactions!).\n4. **`Schedulable` Apex (`implements Schedulable`)**：\n   - Schedules Apex classes to run at specific times via `System.schedule(\'Job Name\', cronExp, new MySchedulable())` or the Setup UI.',
+          '1. **`@future` Methods**：\n   - Must be `static void`, annotated with `@future` (or `@future(callout=true)`).\n   - **Parameter Restriction**: ONLY accepts **primitive data types or collections of primitives** (`Set<Id>`, `List<String>`). **Cannot accept `sObject` parameters** because the sObject data might change in the database while the future method is waiting in the queue!\n   - Cannot call another `@future` method (nor be called from Batch); does NOT return a Job ID; max 50 `@future` calls per transaction.\n2. **`Queueable` Apex (`implements Queueable, Database.AllowsCallouts`)**：\n   - Accepts **`sObject` lists and custom Apex objects** via constructor!\n   - `Id jobId = System.enqueueJob(new MyJob());` returns an `AsyncApexJob` ID (50 enqueues per sync transaction; only 1 from inside an async transaction). Optional delay: `System.enqueueJob(job, delayMinutes)` (0–10 min) or `AsyncOptions` (`MinimumQueueableDelayInMinutes`, `MaximumQueueableStackDepth`, `DuplicateSignature`).\n   - Supports **Job Chaining** (calling `System.enqueueJob` inside `execute()`; chain depth unlimited except Developer/Trial orgs = 5) and **`System.Finalizer`** (`System.attachFinalizer`) to recover from unhandled `LimitException` errors!\n3. **`Batch` Apex (`implements Database.Batchable<sObject>, Database.Stateful`)**：\n   - `Database.getQueryLocator([SELECT ...])` in `start()` retrieves up to **50,000,000 (50 Million) records**! (Note: using `Iterable` is still capped at 50,000 rows).\n   - Each `execute()` chunk (default 200 records, max 2,000) gets its own fresh Governor Limits.\n   - Implementing **`Database.Stateful`** preserves instance member variables across `execute()` chunks so `finish()` can send summary emails (`static` variables are ALWAYS reset between batch transactions!).\n4. **`Schedulable` Apex (`implements Schedulable`)**：\n   - Schedules Apex classes to run at specific times via `System.schedule(\'Job Name\', cronExp, new MySchedulable())` or the Setup UI.',
         language: 'apex',
         codeSnippet: `public class RevenueSummaryBatch implements Database.Batchable<sObject>, Database.Stateful {
     // Database.Stateful preserves these instance variables across all execute() transactions!
@@ -1164,9 +1165,9 @@ handleRefresh() {
     estimatedMinutes: 35,
     examFrequency: '极高频必考 (High-Yield)',
     summary:
-      '默认情况下，Apex 代码运行在 System Mode（系统模式），会自动忽略当前用户的对象权限（CRUD）和字段级安全（FLS）。在 LWC 控制器或集成接口中，开发者必须根据业务需求选择 WITH USER_MODE 或 Security.stripInaccessible。',
+      '传统上（API v66.0 及更早版本），Apex 代码默认运行在 System Mode（系统模式），会自动忽略当前用户的对象权限（CRUD）和字段级安全（FLS）。Summer \'26（API v67.0）起引入 secure-by-default：v67.0+ 编译的类省略共享关键字时默认 with sharing，SOQL/SOSL/DML 默认 user mode（可用 AccessLevel.SYSTEM_MODE / WITH SYSTEM_MODE 显式退出）。在 LWC 控制器或集成接口中，开发者仍应显式选择 WITH USER_MODE 或 Security.stripInaccessible。',
     summaryEn:
-      'By default, Apex executes in System Mode, bypassing Object CRUD and Field-Level Security (FLS). Developers must explicitly enforce user permissions using WITH USER_MODE, Security.stripInaccessible(), or Schema describe checks.',
+      'Classically (API v66.0 and earlier), Apex executes in System Mode by default, bypassing Object CRUD and Field-Level Security (FLS). Since Summer \'26 (API v67.0), secure-by-default Apex makes classes that omit a sharing keyword default to with sharing and runs SOQL/SOSL/DML in user mode (opt out with AccessLevel.SYSTEM_MODE / WITH SYSTEM_MODE). Developers should still explicitly enforce user permissions using WITH USER_MODE, Security.stripInaccessible(), or Schema describe checks.',
     examGlossary: [
       {
         termEn: 'WITH USER_MODE (SOQL) & as user (DML)',
@@ -1188,7 +1189,7 @@ handleRefresh() {
       {
         heading: '1. WITH USER_MODE vs. WITH SECURITY_ENFORCED',
         content:
-          '• **`WITH USER_MODE`** (Recommended Modern Standard):\n  - Enforces **Object CRUD + Field-Level Security (FLS) across ALL clauses (`SELECT`, `WHERE`, `ORDER BY`) + Record-Level Sharing Rules**!\n  - Even if the enclosing class is declared `without sharing`, a query with `WITH USER_MODE` enforces the current user\'s sharing rules.\n  - Supported in DML via `insert as user record;` or `Database.insert(record, AccessLevel.USER_MODE)`.\n• **`WITH SECURITY_ENFORCED`**:\n  - Legacy clause that only checks FLS/CRUD on `SELECT`/`FROM` and does NOT override sharing mode.',
+          '• **`WITH USER_MODE`** (Recommended Modern Standard):\n  - Enforces **Object CRUD + Field-Level Security (FLS) across ALL clauses (`SELECT`, `WHERE`, `ORDER BY`) + Record-Level Sharing Rules**!\n  - Even if the enclosing class is declared `without sharing`, a query with `WITH USER_MODE` enforces the current user\'s sharing rules.\n  - Supported in DML via `insert as user record;` or `Database.insert(record, AccessLevel.USER_MODE)`.\n• **`WITH SECURITY_ENFORCED`**:\n  - Legacy clause that only checks FLS/CRUD on `SELECT`/`FROM` fields, throws on the first violation, and does NOT override sharing mode. **Starting with API v67.0 (Summer \'26) it can no longer be used in Apex (compile error) — replace it with `WITH USER_MODE`.** It may still appear on the exam as an older, not-recommended option.',
         language: 'apex',
         codeSnippet: `// 1. Enforce CRUD + FLS + Sharing in SOQL
 List<Account> accs = [
@@ -1220,7 +1221,7 @@ Set<String> removedFields = decision.getRemovedFields().get('Opportunity');`,
       antiPatternLabel: '❌ Anti-Pattern (反模式): Exposing restricted fields to LWC in default System Mode',
       antiPatternCode: `@AuraEnabled(cacheable=true)
 public static List<Contact> getContacts() {
-    // Apex runs in System Mode by default — leaks Social_Security_Number__c to unauthorized users!
+    // API v66.0 and earlier: Apex runs in System Mode by default — leaks Social_Security_Number__c to unauthorized users!
     return [SELECT Id, Name, Social_Security_Number__c FROM Contact LIMIT 50];
 }`,
       bestPracticeLabel: '✅ Best Practice (最佳实践): Strip unauthorized fields gracefully with stripInaccessible',
@@ -1314,7 +1315,7 @@ private class AccountServiceTest {
       {
         heading: '3. HttpCalloutMock & System.runAs(testUser)',
         content:
-          '• **`Test.setMock(HttpCalloutMock.class, new MyMock())`**: Unit tests cannot make real external HTTP callouts. You must implement `HttpCalloutMock` (or use `StaticResourceCalloutMock`) and register it with `Test.setMock` before calling the method.\n• **`System.runAs(testUser)`**: Tests record-level sharing under a specific User/Profile/PermissionSet, avoids `MIXED_DML_OPERATION`, and does NOT count toward the test method\'s DML/SOQL limits.',
+          '• **`Test.setMock(HttpCalloutMock.class, new MyMock())`**: Unit tests cannot make real external HTTP callouts. You must implement `HttpCalloutMock` (or use `StaticResourceCalloutMock`) and register it with `Test.setMock` before calling the method.\n• **`System.runAs(testUser)`**: Tests record-level sharing as a specific user (it enforces record sharing only — NOT user permissions/CRUD or FLS), avoids `MIXED_DML_OPERATION`, and each `runAs` call counts against the transaction\'s DML statement limit.',
       },
     ],
     codeComparison: {
@@ -1472,7 +1473,7 @@ global with sharing class AccountRestService {
       {
         heading: '1. Standard & Custom Indexed Fields in Salesforce (哪些字段默认带索引)',
         content:
-          'Salesforce automatically maintains database indexes on:\n1. Primary Keys (`Id`)\n2. Record Names (`Name`)\n3. Foreign Keys (Lookup and Master-Detail fields like `AccountId`, `OwnerId`)\n4. Audit Dates (`CreatedDate`, `SystemModstamp` / `LastModifiedDate`)\n5. Custom fields marked as **External ID** or **Unique**.\nUse the **Query Plan Tool** in Developer Console: a query with **Cost <= 1.0** is considered **Selective**.',
+          'Salesforce automatically maintains database indexes on:\n1. Primary Keys (`Id`)\n2. Record Names (`Name`)\n3. Foreign Keys (Lookup and Master-Detail fields like `AccountId`, `OwnerId`)\n4. Audit Dates (`CreatedDate`, `SystemModstamp`) and `RecordTypeId`\n5. Custom fields marked as **External ID** or **Unique**.\nUse the **Query Plan Tool** in Developer Console: a query with **Cost < 1.0** is considered **Selective**.',
       },
       {
         heading: '2. Four Anti-Patterns That Force a Full Table Scan (导致索引失效的四大反模式)',
@@ -1513,7 +1514,7 @@ List<Case> activeCases = [
       AND CreatedDate = LAST_N_DAYS:90
 ];`,
       explanation:
-        'Replacing `!=` with a positive `IN :openStatuses` and anchoring on indexed `AccountId` and `CreatedDate` drops the Query Plan Cost below 0.1.',
+        'Replacing `!=` with a positive `IN :openStatuses` and anchoring on indexed `AccountId` and `CreatedDate` drops the Query Plan Cost below the 1.0 selectivity threshold.',
     },
     examTraps: [
       'Exam Trap 1: How can you make a custom text field indexed without contacting Salesforce Customer Support? Mark the field as **External ID** or **Unique**.',

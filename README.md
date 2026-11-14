@@ -9,7 +9,12 @@ npm install
 npm run dev
 ```
 
-浏览器访问 `http://localhost:5188/`。在 macOS 上也可运行 `./build_macos_app.sh` 生成原生桌面与启动台应用 `ForceCraft Studio.app`。
+浏览器访问 `http://localhost:5188/`。在 macOS 上运行 `./build_macos_app.sh` 会生成桌面与启动台应用 `ForceCraft Studio.app`：它以打包后的生产版本（`vite preview`）启动，源码有改动时自动重新打包，并始终使用 5188 端口（学习数据保存在该端口的浏览器存储中）。
+
+```bash
+npm test          # vitest：剧情数据、间隔复习、模考组卷、判题器
+npm run org-bridge # 可选：连接你自己的 Developer Edition org
+```
 
 ## 核心模块
 
@@ -30,11 +35,22 @@ npm run dev
    - **SOQL 查询沙盒**：内置模拟 Org 对象字典与索引标记，实时诊断 Query Plan 选择性与全表扫描风险。
 
 5. **100% 考纲覆盖双语题库（100 题 + 自定义录题）**
-   - 内置 `Q01–Q100` 共 **100 道 PD1/PD2 中英双语真题**，100% 覆盖官方 6 大板块与 48 个子考点。
+   - 内置 `Q01–Q124` 共 **124 道中英双语题（PD1 108 道 / PD2 16 道）**，按当前官方 Platform Developer 考纲归类：Developer Fundamentals 27% · Process Automation & Logic 28% · User Interface 25% · Testing, Debugging & Deployment 20%，并按 Summer '26（API v67.0）核对过内容。
    - 支持 `15 / 30 / 60` 题计时模考、错题本自动收录与销项、全英考场模式下按需查看中文对照，以及自定义双语录题。
 
 6. **间隔重复记忆闪卡（20 张）& 考前速查手册**
    - 基于原生 `<details name="sf-cheatsheet">` 实现支持浏览器 `⌘F` 自动展开检索的互斥速查表。
+
+## 可选：在自己的 Developer Org 里真实运行
+
+编程实验室的「我的 Org」页可以通过本地连接桥执行真实 SOQL 与匿名 Apex：
+
+1. 注册免费的 Developer Edition org：https://developer.salesforce.com/signup
+2. `npm install -g @salesforce/cli`
+3. `sf org login web --alias forcecraft`
+4. `npm run org-bridge`（保持窗口打开）
+
+连接桥（`bridge/org-bridge.mjs`，无第三方依赖）只监听 `127.0.0.1:5199`，只接受来自 ForceCraft 页面的请求。匿名 Apex 会在 org 中真实执行，请只连接 Developer Edition 或 scratch org。
 
 ## 界面设计与致谢
 

@@ -42,6 +42,8 @@ PLIST
 # 2. Create the MacOS executable launcher
 cat << 'LAUNCHER' > "${APP_BUNDLE}/Contents/MacOS/launcher"
 #!/bin/zsh
+# ForceCraft launcher: serves the optimized production build (vite preview),
+# rebuilding only when the source has changed since the last build.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:$PATH"
 
 PROJECT_DIR="/Users/tom/Tom-CV/salesforce-dev-academy"
@@ -49,20 +51,41 @@ PORT=5188
 URL="http://localhost:${PORT}"
 LOG_FILE="/tmp/forcecraft-studio-server.log"
 
-# Check if port 5188 is already listening
-if ! lsof -iTCP:${PORT} -sTCP:LISTEN -t >/dev/null 2>&1; then
-  cd "${PROJECT_DIR}"
-  nohup npm run dev -- --port ${PORT} > "${LOG_FILE}" 2>&1 &
-  # Wait up to 8 seconds for server to listen
-  for i in {1..32}; do
-    if lsof -iTCP:${PORT} -sTCP:LISTEN -t >/dev/null 2>&1; then
-      break
+cd "${PROJECT_DIR}" || exit 1
+
+is_listening() { lsof -iTCP:${PORT} -sTCP:LISTEN -t >/dev/null 2>&1; }
+
+# Learning data lives in this origin's localStorage (http://localhost:5188), so the
+# port must never change. Reuse our own preview server, replace our own dev server,
+# and refuse (with an alert) if an unrelated program holds the port.
+if is_listening; then
+  PID=$(lsof -iTCP:${PORT} -sTCP:LISTEN -t | head -n 1)
+  CWD=$(lsof -a -p "${PID}" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
+  CMD=$(ps -o command= -p "${PID}" 2>/dev/null)
+  if [[ "${CWD}" == "${PROJECT_DIR}"* ]]; then
+    if [[ "${CMD}" != *"preview"* ]]; then
+      kill "${PID}" 2>/dev/null
+      for i in {1..20}; do is_listening || break; sleep 0.25; done
     fi
+  else
+    osascript -e "display alert \"ForceCraft 无法启动\" message \"端口 ${PORT} 正被其他程序占用（${CMD%% *}）。请先关闭它再打开 ForceCraft，学习数据保存在这个端口下。\""
+    exit 1
+  fi
+fi
+
+if ! is_listening; then
+  # Rebuild when dist is missing or any source/content file is newer than the last build.
+  if [ ! -f dist/index.html ] || [ -n "$(find src public index.html -newer dist/index.html -print -quit 2>/dev/null)" ]; then
+    npx vite build > "${LOG_FILE}" 2>&1
+  fi
+  nohup npx vite preview --port ${PORT} --strictPort >> "${LOG_FILE}" 2>&1 &
+  for i in {1..40}; do
+    is_listening && break
     sleep 0.25
   done
 fi
 
-# Open in Chrome App Mode (standalone window) if Chrome exists, otherwise default browser
+# Open in Chrome App Mode (standalone window, supports local-file backup sync), otherwise default browser
 if [ -d "/Applications/Google Chrome.app" ]; then
   open -na "Google Chrome" --args --app="${URL}"
 else
@@ -144,7 +167,7 @@ CMD
 chmod +x "${PROJECT_DIR}/启动 ForceCraft 学习平台.command"
 
 # 5. Copy to /Applications and ~/Desktop for instant access
-cp -R "${APP_BUNDLE}" "/Applications/${APP_NAME}.app" 2>/dev/null || true
-cp -R "${APP_BUNDLE}" "$HOME/Desktop/${APP_NAME}.app" 2>/dev/null || true
+rm -rf "/Applications/${APP_NAME}.app" && cp -R "${APP_BUNDLE}" "/Applications/${APP_NAME}.app" 2>/dev/null || true
+rm -rf "$HOME/Desktop/${APP_NAME}.app" && cp -R "${APP_BUNDLE}" "$HOME/Desktop/${APP_NAME}.app" 2>/dev/null || true
 
 echo "Successfully built and installed ForceCraft Studio.app!"

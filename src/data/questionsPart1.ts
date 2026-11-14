@@ -200,9 +200,9 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
       },
       {
         id: 'B',
-        textEn: 'InnerClass executes in `without sharing` (system context) mode by default unless explicitly declared otherwise.',
-        text: '默认运行在 without sharing（系统上下文）模式下，因为内部类绝不继承外部类的 sharing 声明。',
-        whyRightOrWrong: '✅ Correct (正确): Inner classes do not inherit the sharing setting from their container class; omitting the keyword defaults to without sharing.',
+        textEn: 'InnerClass does NOT inherit the `with sharing` declaration; with no keyword it runs in the caller\'s sharing context and defaults to `without sharing` (system context) when it is the entry point.',
+        text: '内部类不会继承外部类的 with sharing 声明；未声明关键字时沿用调用方的共享上下文，作为入口点时默认按 without sharing（系统上下文）运行。',
+        whyRightOrWrong: '✅ Correct (正确): Inner classes do not inherit the sharing setting from their container class. With no keyword, the current sharing rules of the caller remain in effect, and the class runs as without sharing when it is the entry point (classic rule, API v66.0 and earlier; at API v67.0+/Summer \'26 an omitted keyword defaults to with sharing). 内部类不继承外部类的声明；未声明时沿用调用方上下文，作为入口时按 without sharing 运行（API v67.0+ 起省略关键字默认 with sharing）。',
       },
       {
         id: 'C',
@@ -218,7 +218,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
       },
     ],
     correctOptionIds: ['B'],
-    coreTakeaway: 'Exam Golden Rule: Inner classes DO NOT inherit the sharing setting from their container class! Always declare `inherited sharing` or `with sharing` on inner classes.',
+    coreTakeaway: 'Exam Golden Rule: Inner classes DO NOT inherit the sharing setting from their container class! Always declare `inherited sharing` or `with sharing` explicitly on inner classes (内部类不继承外部类的 sharing 声明，务必显式声明；API v67.0+ 起省略关键字默认 with sharing).',
     officialDocTopic: 'Using the with sharing, without sharing, and inherited sharing Keywords',
   },
   {
@@ -250,7 +250,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
         id: 'C',
         textEn: 'public class UtilityService (omitting the sharing keyword)',
         text: 'public class UtilityService（省略关键字）',
-        whyRightOrWrong: '❌ Incorrect (错误): Omitting the keyword defaults to `without sharing` when invoked as a top-level entry point.',
+        whyRightOrWrong: '❌ Incorrect (错误): For classes on API v66.0 and earlier, omitting the keyword runs as `without sharing` when invoked as a top-level entry point (API v67.0+ changes the default to with sharing, but an explicit `inherited sharing` still documents intent and passes Security Review). 省略关键字在 API v66.0 及以前作为入口时按 without sharing 运行。',
       },
       {
         id: 'D',
@@ -354,7 +354,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'beginner',
     domain: 'SOQL & SOSL 数据查询 (Data Query)',
-    examDomain: 'Testing, Debugging & Deployment (20%)',
+    examDomain: 'Developer Fundamentals (27%)',
     questionType: 'multiple',
     selectCount: 2,
     scenarioEn:
@@ -506,7 +506,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
         id: 'C',
         textEn: 'Switch to the legacy directive `<template if:true={orderTotal > 1000}>`.',
         text: '改用旧版指令 `<template if:true={orderTotal > 1000}>`。',
-        whyRightOrWrong: '❌ Incorrect (错误): Neither `lwc:if` nor `if:true` allows expressions inside `{}`.',
+        whyRightOrWrong: '❌ Incorrect (错误): Neither `lwc:if` nor `if:true` allows expressions inside `{}`. Also, `if:true`/`if:false` are legacy directives that are no longer recommended (and may be removed in the future)—use `lwc:if`/`lwc:elseif`/`lwc:else`. if:true 为旧版指令，已不推荐使用。',
       },
       {
         id: 'D',
@@ -700,9 +700,9 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
-      'An external integration inserts **500 `Opportunity` records** in a single API call. The `Opportunity` object has a `before insert` trigger that executes **3 SOQL queries** per invocation. How many times does the trigger execute, and how many total SOQL queries are consumed in this transaction?',
+      'An Apex service class inserts **500 `Opportunity` records** with a single `insert opps;` DML statement. The `Opportunity` object has a `before insert` trigger that executes **3 SOQL queries** per invocation. How many times does the trigger execute, and how many total SOQL queries are consumed in this transaction?',
     scenario:
-      '外部集成在单次 API 调用中一次性插入了 **500 条** `Opportunity` 记录。`Opportunity` 上的 `before insert` 触发器每次调用会执行 **3 次 SOQL 查询**。请问该触发器会被调用几次？该事务总共消耗多少次 SOQL？',
+      '某 Apex 服务类用单条 `insert opps;` DML 语句一次性插入了 **500 条** `Opportunity` 记录。`Opportunity` 上的 `before insert` 触发器每次调用会执行 **3 次 SOQL 查询**。请问该触发器会被调用几次？该事务总共消耗多少次 SOQL？',
     options: [
       {
         id: 'A',
@@ -730,7 +730,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
       },
     ],
     correctOptionIds: ['B'],
-    coreTakeaway: 'Platform Chunking Rule: Bulk DML >200 records is split into chunks of 200 records per trigger invocation, and all chunks share the SAME transaction Governor Limits.',
+    coreTakeaway: 'Platform Chunking Rule: a single Apex DML statement on >200 records is split into chunks of 200 records per trigger invocation, and all chunks share the SAME transaction Governor Limits. (Note: external loads differ — each SOAP API call/Data Loader batch is max 200 records and its own transaction, and Bulk API processes each 200-record chunk in its own transaction. 外部 API/Bulk API 每个分块是独立事务。)',
     officialDocTopic: 'Bulk Triggers and Platform Chunking',
   },
   {
@@ -742,9 +742,9 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
-      'A developer uses `public static Boolean isFirstRun = true;` inside a Trigger Handler to prevent recursion. When an administrator updates **500 `Account` records** using Data Loader (Batch Size = 500), only the first 200 records are processed properly, while records 201–500 are silently skipped! How should the developer fix this?',
+      'A developer uses `public static Boolean isFirstRun = true;` inside a Trigger Handler to prevent recursion. When a nightly Apex job updates **500 `Account` records** with a single `update accounts;` DML statement, only the first 200 records are processed properly, while records 201–500 are silently skipped! How should the developer fix this?',
     scenario:
-      '开发者在 Trigger Handler 中使用 `public static Boolean isFirstRun = true;` 防止递归。当管理员用 Data Loader 一次性更新 500 条 Account 时，只有前 200 条被处理，第 201–500 条全部被静默跳过！应如何修复？',
+      '开发者在 Trigger Handler 中使用 `public static Boolean isFirstRun = true;` 防止递归。当夜间 Apex 任务用单条 `update accounts;` 语句一次性更新 500 条 Account 时，只有前 200 条被处理，第 201–500 条全部被静默跳过！应如何修复？',
     options: [
       {
         id: 'A',
@@ -772,7 +772,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
       },
     ],
     correctOptionIds: ['B'],
-    coreTakeaway: 'Never use a naive `static Boolean` for trigger recursion control—it breaks bulk operations >200 records. Always use `static Set<Id>` + field change comparison.',
+    coreTakeaway: 'Never use a naive `static Boolean` for trigger recursion control—it breaks single-transaction DML on >200 records (trigger chunks 2+ are skipped). Always use `static Set<Id>` + field change comparison.',
     officialDocTopic: 'Trigger Recursion and Chunking Pitfalls',
   },
 
@@ -878,29 +878,29 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
         id: 'A',
         textEn: '5 rows, because only 5 AggregateResult objects are returned.',
         text: '5 行，因为只返回了 5 个 AggregateResult 对象。',
-        whyRightOrWrong: '❌ Incorrect (错误): Aggregate queries count every underlying record scanned/aggregated, not just the grouped summary rows!',
+        whyRightOrWrong: '✅ Correct (正确): Special rule for COUNT()/COUNT(fieldname): it is counted as ONE query row, or—when the query has GROUP BY—one query row per grouping. 5 groups = 5 rows. (COUNT 特例：无 GROUP BY 计 1 行，有 GROUP BY 则每个分组计 1 行。)',
       },
       {
         id: 'B',
         textEn: '40,000 rows, because every underlying record included in the aggregation counts toward the 50,000 query row limit.',
         text: '40,000 行，因为被聚合扫描的每一条底层记录都会计入 50,000 行查询配额。',
-        whyRightOrWrong: '✅ Correct (正确): Queries that include aggregate functions still count every aggregated source row toward the 50,000 query row governor limit.',
+        whyRightOrWrong: '❌ Incorrect (错误): This is true for aggregate functions OTHER than COUNT (e.g., SUM, MAX, AVG), which count every aggregated source row. COUNT(Id) with GROUP BY counts one row per group. (SUM/MAX/AVG 才按底层记录逐行计数。)',
       },
       {
         id: 'C',
         textEn: '0 rows, because aggregate queries only count toward the 100 SOQL query limit.',
         text: '0 行，聚合查询不计入行数配额。',
-        whyRightOrWrong: '❌ Incorrect (错误): They count toward both the 100 query limit and the 50,000 row limit.',
+        whyRightOrWrong: '❌ Incorrect (错误): Aggregate queries count toward both the 100 query limit and the 50,000 row limit (here, 5 rows). 聚合查询同时计入查询次数和查询行数。',
       },
       {
         id: 'D',
         textEn: '1 row.',
         text: '1 行。',
-        whyRightOrWrong: '❌ Incorrect (错误).',
+        whyRightOrWrong: '❌ Incorrect (错误): 1 row would be consumed by `SELECT COUNT() FROM Opportunity` WITHOUT a GROUP BY clause. 无 GROUP BY 的 COUNT() 才只计 1 行。',
       },
     ],
-    correctOptionIds: ['B'],
-    coreTakeaway: 'Aggregate queries (`COUNT`, `SUM`, `GROUP BY`) count the total number of underlying records aggregated toward the 50,000 SOQL row limit.',
+    correctOptionIds: ['A'],
+    coreTakeaway: 'Query-row accounting for aggregates: SUM/MAX/MIN/AVG count every aggregated source row toward the 50,000-row limit, but COUNT()/COUNT(field) counts as 1 row (or 1 row per group with GROUP BY). 聚合函数计数规则：COUNT 特例按 1 行/每组 1 行计。',
     officialDocTopic: 'Aggregate Queries and Governor Limits',
   },
 
@@ -910,7 +910,7 @@ export const QUESTIONS_PART_1: ExamQuestion[] = [
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Developer Fundamentals (27%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -962,7 +962,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Developer Fundamentals (27%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1004,7 +1004,7 @@ try {
     certLevel: 'PD1',
     stage: 'intermediate',
     domain: 'Apex 核心与面向对象 (Apex & OOP)',
-    examDomain: 'Developer Fundamentals (27%)',
+    examDomain: 'Process Automation & Logic (28%)',
     questionType: 'single',
     selectCount: 1,
     scenarioEn:
@@ -1022,7 +1022,7 @@ try {
         id: 'B',
         textEn: 'merge erpOrders ERP_Order_ID__c;',
         text: 'merge erpOrders ERP_Order_ID__c;',
-        whyRightOrWrong: '❌ Incorrect (错误): `merge` only merges up to 3 duplicate Account, Contact, Lead, Case, or Individual records.',
+        whyRightOrWrong: '❌ Incorrect (错误): Apex `merge` only merges up to 3 duplicate records of the same type, and only for Accounts, Contacts, Leads, and Cases; it does not match on External IDs. merge 仅支持 Account/Contact/Lead/Case 最多 3 条记录合并。',
       },
       {
         id: 'C',
@@ -1386,7 +1386,7 @@ wiredContacts({ error, data }) {
       },
     ],
     correctOptionIds: ['A', 'B'],
-    coreTakeaway: 'Queueable advantages over @future: 1) Accepts `sObject` & complex objects; 2) Returns `AsyncApexJob` ID; 3) Supports Job Chaining & `System.Finalizer`.',
+    coreTakeaway: 'Queueable advantages over @future: 1) Accepts `sObject` & complex objects; 2) Returns `AsyncApexJob` ID; 3) Supports Job Chaining & `System.Finalizer`; 4) Optional start delay (`System.enqueueJob(job, 0–10 minutes)`) and `AsyncOptions` (e.g., `MaximumQueueableStackDepth`). Queueable 还支持 0–10 分钟延迟入队与 AsyncOptions 控制链深度。',
     officialDocTopic: 'Queueable Apex vs Future Methods',
   },
   {
@@ -1540,7 +1540,7 @@ wiredContacts({ error, data }) {
         id: 'B',
         textEn: 'WITH SECURITY_ENFORCED',
         text: 'WITH SECURITY_ENFORCED',
-        whyRightOrWrong: '❌ Incorrect (错误): `WITH SECURITY_ENFORCED` only checks CRUD and FLS on SELECT/FROM; it does NOT enforce record-level sharing rules.',
+        whyRightOrWrong: '❌ Incorrect (错误): `WITH SECURITY_ENFORCED` only checks CRUD and FLS on SELECT/FROM fields; it does NOT enforce record-level sharing rules. It is legacy and can no longer be used in Apex saved at API v67.0+ (Summer \'26) — replace it with `WITH USER_MODE`. 该子句为旧语法，API v67.0 起不再支持。',
       },
       {
         id: 'C',
@@ -1588,7 +1588,7 @@ wiredContacts({ error, data }) {
         id: 'C',
         textEn: 'WITH SECURITY_ENFORCED',
         text: 'WITH SECURITY_ENFORCED',
-        whyRightOrWrong: '❌ Incorrect (错误): Applies to SOQL queries and throws an exception when inaccessible fields are encountered.',
+        whyRightOrWrong: '❌ Incorrect (错误): Applies only to SOQL queries (not DML) and throws an exception when inaccessible fields are encountered. It is also legacy—no longer supported at API v67.0+; use `WITH USER_MODE` for queries. 仅用于查询且会抛异常，且 API v67.0 起已不再支持。',
       },
       {
         id: 'D',
@@ -1886,7 +1886,7 @@ wiredContacts({ error, data }) {
         id: 'C',
         textEn: 'import { getRecordNotifyChange } from \'lightning/uiRecordApi\';',
         text: 'import { getRecordNotifyChange } from \'lightning/uiRecordApi\';',
-        whyRightOrWrong: '❌ Incorrect (错误): Used for LDS cache invalidation.',
+        whyRightOrWrong: '❌ Incorrect (错误): `getRecordNotifyChange` was a (now deprecated) LDS cache-notification function—replaced by `notifyRecordUpdateAvailable()`—and has nothing to do with streaming events. 该函数用于 LDS 缓存通知（已弃用，被 notifyRecordUpdateAvailable 取代），与事件订阅无关。',
       },
       {
         id: 'D',
@@ -2064,7 +2064,7 @@ wiredContacts({ error, data }) {
         id: 'D',
         textEn: 'To compile the `.js-meta.xml` file.',
         text: '为了编译 `.js-meta.xml` 文件。',
-        whyRightOrWrong: '❌ Incorrect (错误).',
+        whyRightOrWrong: '❌ Incorrect (错误): Jest never compiles or reads `.js-meta.xml`; that file only configures targets/exposure for deployment. Jest 不处理 .js-meta.xml。',
       },
     ],
     correctOptionIds: ['A'],

@@ -16,6 +16,8 @@ import { UserAppState, CodingChallenge } from '../types';
 import { CODING_CHALLENGES } from '../data/challenges';
 import { MOCK_ORG_TABLES } from '../data/flashcards';
 import { executeMockSoql } from '../utils/storageAndPlanner';
+import { evaluateChallenge } from '../utils/codeJudge';
+import { OrgConsole } from './OrgConsole';
 
 interface CodingLabViewProps {
   state: UserAppState;
@@ -36,7 +38,7 @@ export const CodingLabView: React.FC<CodingLabViewProps> = ({
   onSelectChallenge,
   onSaveSubmission,
 }) => {
-  const [labMode, setLabMode] = useState<'challenges' | 'soql-playground'>('challenges');
+  const [labMode, setLabMode] = useState<'challenges' | 'soql-playground' | 'org'>('challenges');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'Apex' | 'SOQL' | 'LWC'>('ALL');
 
   const currentChallenge: CodingChallenge =
@@ -84,20 +86,8 @@ export const CodingLabView: React.FC<CodingLabViewProps> = ({
   );
 
   const handleRunAndValidate = () => {
-    const passedIds: string[] = [];
-    for (const rule of currentChallenge.acceptanceRules) {
-      const allMatched = rule.mustMatch.every((pattern) => {
-        const regex = new RegExp(pattern, 'i');
-        return regex.test(code);
-      });
-      const noneForbidden = (rule.mustNotMatch || []).every((pattern) => {
-        const regex = new RegExp(pattern, 'i');
-        return !regex.test(code);
-      });
-      if (allMatched && noneForbidden) {
-        passedIds.push(rule.id);
-      }
-    }
+    // Comments are stripped first, so keywords written in comments can't pass a rule.
+    const passedIds = evaluateChallenge(currentChallenge, code);
 
     const passedAll = passedIds.length === currentChallenge.acceptanceRules.length;
     setEvaluationResult({
@@ -176,6 +166,13 @@ export const CodingLabView: React.FC<CodingLabViewProps> = ({
           >
             SOQL 查询沙盒与对象字典
           </button>
+          <button
+            type="button"
+            className={`pill-tab ${labMode === 'org' ? 'selected' : ''}`}
+            onClick={() => setLabMode('org')}
+          >
+            我的 Org（真实运行）
+          </button>
         </div>
 
         <span className="nav-badge">
@@ -183,7 +180,9 @@ export const CodingLabView: React.FC<CodingLabViewProps> = ({
         </span>
       </div>
 
-      {labMode === 'challenges' ? (
+      {labMode === 'org' ? (
+        <OrgConsole />
+      ) : labMode === 'challenges' ? (
         <div className="grid-sidebar-split">
           {/* Left Challenge Selector */}
           <div className="surface-card" style={{ padding: '16px' }}>
